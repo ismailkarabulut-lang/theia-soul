@@ -14,7 +14,7 @@ from core import db
 from core.base_model import GenerateRequest, Message
 from models import factory
 
-_vault = Path.home() / "theia-vault"
+_vault = Path(__file__).resolve().parents[2] / "theia-vault"
 if str(_vault) not in sys.path:
     sys.path.insert(0, str(_vault))
 
