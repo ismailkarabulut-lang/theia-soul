@@ -11,14 +11,8 @@ from api.schemas import (
 )
 from core import db
 from core.base_model import GenerateRequest, Message
+from core.theia_soul import build_system as _theia_system
 from models import factory
-
-import importlib.util as _ilu
-_soul_path = Path(__file__).resolve().parents[2] / "theia-vault" / "core" / "theia_soul.py"
-_spec = _ilu.spec_from_file_location("theia_soul", _soul_path)
-_soul = _ilu.module_from_spec(_spec)
-_spec.loader.exec_module(_soul)
-_theia_system = _soul.build_system
 
 router = APIRouter()
 
