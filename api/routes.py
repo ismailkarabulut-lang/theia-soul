@@ -1,6 +1,5 @@
 import asyncio
 import json
-import sys
 import uuid
 from pathlib import Path
 
@@ -14,11 +13,12 @@ from core import db
 from core.base_model import GenerateRequest, Message
 from models import factory
 
-_vault = Path(__file__).resolve().parents[2] / "theia-vault"
-if str(_vault) not in sys.path:
-    sys.path.insert(0, str(_vault))
-
-from core.theia_soul import build_system as _theia_system
+import importlib.util as _ilu
+_soul_path = Path(__file__).resolve().parents[2] / "theia-vault" / "core" / "theia_soul.py"
+_spec = _ilu.spec_from_file_location("theia_soul", _soul_path)
+_soul = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_soul)
+_theia_system = _soul.build_system
 
 router = APIRouter()
 
