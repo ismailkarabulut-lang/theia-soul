@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from api.schemas import (
+    MemoryWrite,
     ChatRequest, ChatResponse, SessionInfo, MemoryEntry, HealthResponse
 )
 from core import db
@@ -113,14 +114,80 @@ async def list_session_memory(session_id: str):
     return await db.list_memory(session_id=session_id)
 
 @router.put("/memory/{key}", status_code=204)
-async def set_global_memory(key: str, value: str, session_id: str | None = None):
-    await db.set_memory(key, value, session_id=session_id)
+async def set_global_memory(key: str, body: MemoryWrite):
+    await db.set_memory_full(key, body.value, entry_type=body.entry_type, energy_level=body.energy_level, session_id=body.session_id)
 
 @router.delete("/memory/{key}", status_code=204)
 async def delete_global_memory(key: str):
     db_conn = await db.get_db()
     try:
         await db_conn.execute("DELETE FROM memory WHERE session_id IS NULL AND key = ?", (key,))
+        await db_conn.commit()
+    finally:
+        await db_conn.close()
+
+# --- Scout ---
+@router.get("/scout/report")
+async def scout_report(status: str | None = None):
+    db_conn = await db.get_db()
+    try:
+        if status:
+            async with db_conn.execute("""
+                SELECT key, value, entry_type, energy_level, status, first_seen_at, updated_at
+                FROM memory
+                WHERE session_id IS NULL AND status = ?
+                ORDER BY updated_at DESC
+            """, (status,)) as cursor:
+                rows = await cursor.fetchall()
+        else:
+            async with db_conn.execute("""
+                SELECT key, value, entry_type, energy_level, status, first_seen_at, updated_at
+                FROM memory
+                WHERE session_id IS NULL
+                ORDER BY updated_at DESC
+            """) as cursor:
+                rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        await db_conn.close()
+
+@router.get("/scout/summary")
+async def scout_summary():
+    db_conn = await db.get_db()
+    try:
+        async with db_conn.execute("""
+            SELECT status, COUNT(*) as count
+            FROM memory
+            WHERE session_id IS NULL
+            GROUP BY status
+        """) as cursor:
+            status_rows = await cursor.fetchall()
+        async with db_conn.execute("""
+            SELECT COUNT(*) as total, MAX(updated_at) as last_update
+            FROM memory
+            WHERE session_id IS NULL
+        """) as cursor:
+            totals = await cursor.fetchone()
+        return {
+            "total": totals["total"],
+            "last_update": totals["last_update"],
+            "by_status": {row["status"]: row["count"] for row in status_rows}
+        }
+    finally:
+        await db_conn.close()
+
+@router.patch("/scout/status/{key}", status_code=204)
+async def update_scout_status(key: str, body: dict):
+    allowed = {"active", "passive", "archived"}
+    new_status = body.get("status")
+    if new_status not in allowed:
+        raise HTTPException(status_code=400, detail=f"Geçersiz status. İzin verilenler: {allowed}")
+    db_conn = await db.get_db()
+    try:
+        await db_conn.execute(
+            "UPDATE memory SET status = ? WHERE key = ? AND session_id IS NULL",
+            (new_status, key)
+        )
         await db_conn.commit()
     finally:
         await db_conn.close()

@@ -154,7 +154,7 @@ async def list_memory(session_id: str | None = None) -> list[dict]:
     db = await get_db()
     try:
         cursor = await db.execute(
-            "SELECT key, value, updated_at FROM memory WHERE session_id IS ? ORDER BY key",
+            "SELECT key, value, updated_at, entry_type, energy_level FROM memory WHERE session_id IS ? ORDER BY key",
             (session_id,),
         )
         return [dict(row) for row in await cursor.fetchall()]
@@ -164,3 +164,39 @@ async def list_memory(session_id: str | None = None) -> list[dict]:
 
 def _now() -> str:
     return datetime.utcnow().isoformat()
+
+
+async def set_memory_full(key: str, value: str, entry_type: str = "memory", energy_level: int | None = None, session_id: str | None = None) -> None:
+    now = _now()
+    db = await get_db()
+    try:
+        if session_id is None:
+            async with db.execute(
+                "SELECT first_seen_at FROM memory WHERE session_id IS NULL AND key = ?",
+                (key,),
+            ) as cur:
+                row = await cur.fetchone()
+                first_seen = row[0] if row else now
+            await db.execute(
+                "DELETE FROM memory WHERE session_id IS NULL AND key = ?",
+                (key,),
+            )
+            await db.execute(
+                """
+                INSERT INTO memory (session_id, key, value, updated_at, entry_type, energy_level, first_seen_at)
+                VALUES (NULL, ?, ?, ?, ?, ?, ?)
+                """,
+                (key, value, now, entry_type, energy_level, first_seen),
+            )
+        else:
+            await db.execute(
+                """
+                INSERT INTO memory (session_id, key, value, updated_at, entry_type, energy_level)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, entry_type = excluded.entry_type, energy_level = excluded.energy_level
+                """,
+                (session_id, key, value, now, entry_type, energy_level),
+            )
+        await db.commit()
+    finally:
+        await db.close()

@@ -6,7 +6,7 @@ import uuid
 class ChatRequest(BaseModel):
     message: str
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    model: Optional[str] = None          # claude | deepseek | kimi | ollama — None = DEFAULT_MODEL
+    model: Optional[str] = None
     system: Optional[str] = None
     stream: bool = False
     max_tokens: int = 2048
@@ -33,8 +33,17 @@ class MemoryEntry(BaseModel):
     key: str
     value: str
     updated_at: str
+    entry_type: Optional[str] = "memory"
+    energy_level: Optional[int] = None
 
 
 class HealthResponse(BaseModel):
     status: str
     models: dict[str, bool]
+
+
+class MemoryWrite(BaseModel):
+    value: str
+    entry_type: str = "memory"
+    energy_level: Optional[int] = None
+    session_id: Optional[str] = None

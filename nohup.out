@@ -1,0 +1,199 @@
+INFO:     Started server process [61164]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8000): [errno 98] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Started server process [61494]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     100.127.91.26:50294 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     100.127.91.26:50294 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     100.127.91.26:39916 - "GET /api/status HTTP/1.1" 404 Not Found
+INFO:     100.127.91.26:34730 - "GET / HTTP/1.1" 200 OK
+INFO:     100.127.91.26:57792 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [61494]
+INFO:     Started server process [69140]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53682 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [69140]
+INFO:     Started server process [69237]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:40600 - "GET /api/memory HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:44996 - "PUT /api/memory/persona_test?value=test&entry_type=persona&energy_level=4 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:59504 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59180 - "PUT /api/memory/persona_test?value=test&entry_type=persona&energy_level=4 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:43234 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39942 - "PUT /api/memory/persona_test HTTP/1.1" 422 Unprocessable Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [69237]
+INFO:     Started server process [69442]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:41778 - "PUT /api/memory/persona_test HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:46650 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60506 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35386 - "PUT /api/memory/persona_test HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:45148 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [69442]
+INFO:     Started server process [69673]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:43068 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     100.127.91.26:50608 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     100.127.91.26:50608 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:httpx:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:     100.127.91.26:34040 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56082 - "GET /health HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43356 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43360 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39594 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38780 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:39692 - "GET /api/memory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40124 - "GET /api/scout/report HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54326 - "GET /api/scout/report HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:36216 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [69673]
+INFO:     Started server process [77675]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:38470 - "GET /api/scout/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46444 - "GET /api/scout/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55370 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:55382 - "GET /api/scout/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59126 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:59130 - "GET /api/scout/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36360 - "PUT /api/memory/7875201938 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/ismail/.local/lib/python3.13/site-packages/uvicorn/protocols/http/h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ismail/.local/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/ismail/.local/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/ismail/.local/lib/python3.13/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ismail/theia-soul/api/routes.py", line 118, in set_global_memory
+    await db.set_memory_full(key, body.value, entry_type=body.entry_type, energy_level=body.energy_level, session_id=body.session_id)
+  File "/home/ismail/theia-soul/core/db.py", line 173, in set_memory_full
+    await db.execute(
+    ...<6 lines>...
+    )
+  File "/home/ismail/.local/lib/python3.13/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ismail/.local/lib/python3.13/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/home/ismail/.local/lib/python3.13/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+sqlite3.IntegrityError: UNIQUE constraint failed: memory.key
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [77675]
+INFO:     Started server process [77976]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [77976]
+INFO:     Started server process [78027]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:48880 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [78027]
+INFO:     Started server process [78122]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:46186 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [78122]
+INFO:     Started server process [78193]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:42828 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:42992 - "PUT /api/memory/test_key HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:43008 - "PUT /api/memory/test_key HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:60224 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:55848 - "PUT /api/memory/7875201938 HTTP/1.1" 204 No Content
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [78193]
