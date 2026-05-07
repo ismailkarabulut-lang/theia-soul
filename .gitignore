@@ -6,3 +6,5 @@ __pycache__/
 memory/*.db
 *.db
 .DS_Store
+bridge.log
+*.bak

@@ -191,3 +191,70 @@ async def update_scout_status(key: str, body: dict):
         await db_conn.commit()
     finally:
         await db_conn.close()
+
+
+# --- Daily Brief ---
+from datetime import datetime
+from pydantic import BaseModel
+
+class DailyBrief(BaseModel):
+    text: str
+    date: str | None = None
+    projects: list[str] | None = None
+
+@router.post("/soul/daily", status_code=201)
+async def create_daily_brief(body: DailyBrief):
+    date_key = body.date or datetime.utcnow().strftime("%Y-%m-%d")
+    key = f"daily_{date_key}"
+    value = body.text
+    if body.projects:
+        value = f"[Projeler: {', '.join(body.projects)}]\n\n{body.text}"
+    await db.set_memory_full(
+        key=key,
+        value=value,
+        entry_type="daily_summary",
+        energy_level=None,
+        session_id=None,
+    )
+    return {"key": key, "date": date_key, "stored": True}
+
+
+# --- TTS / Speak ---
+import edge_tts
+from pydantic import BaseModel as _BaseModel
+
+VOICES = {
+    "tr":   "tr-TR-EmelNeural",
+    "tr-m": "tr-TR-AhmetNeural",
+    "en":   "en-US-JennyNeural",
+}
+
+class SpeakRequest(_BaseModel):
+    text: str
+    voice: str = "tr"
+    rate: str  = "+0%"
+    volume: str = "+0%"
+
+@router.post("/speak")
+async def speak(req: SpeakRequest):
+    if not req.text or not req.text.strip():
+        raise HTTPException(status_code=400, detail="text boş olamaz")
+    text  = req.text.strip()[:1000]
+    voice = VOICES.get(req.voice, req.voice)
+    try:
+        communicate = edge_tts.Communicate(text=text, voice=voice, rate=req.rate, volume=req.volume)
+        async def audio_generator():
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    yield chunk["data"]
+        return StreamingResponse(
+            audio_generator(),
+            media_type="audio/mpeg",
+            headers={"Cache-Control": "no-cache", "X-Voice": voice},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS hatası: {str(e)}")
+
+@router.get("/speak/voices")
+async def speak_voices():
+    return {"voices": VOICES, "default": "tr"}

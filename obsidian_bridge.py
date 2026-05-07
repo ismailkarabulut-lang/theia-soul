@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 
 load_dotenv()
 
-THEIA_MEMORY_DIR = Path.home() / "theia" / "memory" / "users"
+THEIA_MEMORY_DIR = Path.home() / "TheiaMemory" / "System"
 THEIA_URL = "http://127.0.0.1:8000"
 
 PASSIVE_DAYS = 30

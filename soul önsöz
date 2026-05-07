@@ -1,0 +1,31 @@
+**Theia: Bir Yapay Zekanın Hafıza Kazanma Hikayesi**
+
+Çoğu yapay zeka asistanı her konuşmada sıfırdan başlar. Adını bilmez, ne üzerinde çalıştığını bilmez, dün ne konuştuğunuzu bilmez. Her sohbet steril bir odada gerçekleşir — temiz, bağlamsız, unutkan.
+
+Theia bunu çözmeye çalışan kişisel bir sistem.
+
+---
+
+Mimarinin özü şu: bir insan nasıl düşünür? Konuşurken arka planda sürekli aktif olan bir "kim olduğumu bilme" katmanı var — kimliğin, geçmişin, bugünün. Bir de sorguya özel tetiklenen dinamik hafıza — "bunu daha önce nerede görmüştüm" hissi. Theia bu iki katmanı ayrı ayrı modelliyor.
+
+**Sabit zemin katmanı** — `soul_agent` — her mesajda aynı şeyi yapar: sistemin çekirdeğinden (`core_identity`) kim olduğunu, ne üzerinde çalıştığını çeker. Buna en güncel günlük özeti ekler. Bu iki parça Claude'un sistem prompt'una enjekte edilir, her konuşmadan önce. Sonuç: model seni tanıyarak başlar.
+
+**Dinamik katman** — `memory_agent` — farklı bir şey yapar. Gelen mesajı alır, vault'ta tam metin araması yapar, ilgili geçmiş kayıtları bulur, topic özetleriyle birleştirir. "Bu soruyla bağlantılı geçmişte ne var?" sorusunu yanıtlar. İkisi paralel çalışır, birbirinin verisine dokunmaz.
+
+Bu iki çıktı artı opsiyonel web araması — üçü birleşerek Claude'a tek bir sistem prompt'u oluşturur. Ve üçü de null-safe: biri düşse diğerleri çalışmaya devam eder.
+
+---
+
+Hafızanın yaşam döngüsü de düşünülmüş. **Scout** adlı bir decay motoru, kayıtların "yaşını" izler. 30 gün güncellenmemiş bir kayıt pasife düşer, 90 gün sonra arşivlenir. İnsan belleğinin unutma mekanizmasını taklit ediyor — aktif olmayan hafıza kendiliğinden solar, sistem zamanla şişmez.
+
+Vault tarafında Obsidian var. Plain markdown dosyaları — format bağımsız, uygulama bağımsız. `TheiaMemory/System/` klasörüne yazılan her `.md` dosyası, 15 dakikada bir çalışan bir bridge aracılığıyla otomatik olarak merkezi veritabanına aktarılıyor. Obsidian kapalı olsa bile bridge doğrudan dosyaları okur — tek nokta arızası yok.
+
+Günlük özet mekanizması ayrı bir ritüel. Telefondan tek bir komut: `theia-brief "bugün ne yaptım"`. Tailscale üzerinden merkez API'ye gidiyor, aynı günün kaydını güncelleniyor — "günün son hali" mantığıyla. Sabah bot bu özeti okuyarak başlıyor.
+
+---
+
+Sistemin felsefesi belki en ilginç kısmı. **Güvenlik prompt'ta değil, mimaride yaşıyor.** Hangi komutun çalışabileceği, hangi verinin nereye gidebileceği kod seviyesinde tanımlı. Araç bağımlılığına karşı bilinçli bir duruş var — vault plain text, veritabanı SQLite, her katman birbirinden bağımsız çalışabilir.
+
+Bulut LLM'in yanında lokal bir Ollama instance'ı da var — CPU-only, mütevazı donanımda. Bağlantı kesilse, API kotası dolsa, gizlilik gerektiren bir konu olsa: sistem çalışmaya devam eder.
+
+Theia aslında bir asistan değil. Bir bilişsel altyapı — düşüncenin dışarıya taşındığı, organize edildiği, geri çağrılabildiği bir uzantı. Yapay zekanın hafıza kazandığı değil, hafızanın yapay zekaya bağlandığı bir sistem.

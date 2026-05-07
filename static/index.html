@@ -3,544 +3,736 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>THEIA SOUL</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<title>THEIA · SOUL // V0.3</title>
 <style>
-  :root {
-    --green: #00ff41;
-    --green-dim: #00cc33;
-    --green-dark: #003b0f;
-    --green-faint: rgba(0,255,65,0.07);
-    --bg: #0a0a0a;
-    --bg2: #0f0f0f;
-    --bg3: #141414;
-    --border: rgba(0,255,65,0.18);
-    --border-bright: rgba(0,255,65,0.45);
-    --text: #c8ffc8;
-    --text-dim: rgba(200,255,200,0.45);
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-ui: 'Rajdhani', sans-serif;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#050805; --bg2:#080d08;
+  --green:#00ff41; --green-dim:rgba(0,255,65,0.55);
+  --green-faint:rgba(0,255,65,0.08); --green-border:rgba(0,255,65,0.18);
+  --green-border2:rgba(0,255,65,0.35); --text:rgba(0,255,65,0.85);
+  --muted:rgba(0,255,65,0.38); --dim:rgba(0,255,65,0.14);
+  --orange:#ff8c00; --red:#ff3333;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:9999;}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.7) 100%);pointer-events:none;z-index:9998;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* SHELL */
+.shell{display:flex;flex-direction:column;height:100vh;max-width:900px;margin:0 auto;border-left:1px solid var(--green-border);border-right:1px solid var(--green-border);}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--green-border);background:var(--bg);flex-shrink:0;position:relative;z-index:10;}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0.4;}
+.hdr-logo h1{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:.22em;color:var(--green);text-shadow:0 0 20px rgba(0,255,65,0.6);}
+.hdr-logo p{font-size:9px;letter-spacing:.28em;color:var(--muted);}
+.model-select{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--green);background:transparent;border:1px solid var(--green-border2);padding:6px 14px;border-radius:2px;cursor:pointer;outline:none;appearance:none;min-width:130px;}
+.model-select option{background:#050805;}
+.hdr-right{display:flex;align-items:center;gap:16px;}
+.ses-label{font-size:9px;letter-spacing:.2em;color:var(--muted);}
+.ses-val{font-size:10px;color:var(--green-dim);}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 
-  /* Matrix rain canvas */
-  #matrix-rain {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    opacity: 0.045;
-    z-index: 0;
-  }
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--green-border);background:var(--bg);flex-shrink:0;}
+.tab-btn{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--muted);background:transparent;border:none;border-right:1px solid var(--green-border);padding:10px 22px;cursor:pointer;transition:all 0.2s;position:relative;text-transform:uppercase;}
+.tab-btn:hover{color:var(--green);background:var(--green-faint);}
+.tab-btn.active{color:var(--green);background:rgba(0,255,65,0.05);}
+.tab-btn.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:var(--green);box-shadow:0 0 8px var(--green);}
+.tab-count{display:inline-block;font-size:8px;background:var(--green-faint);border:1px solid var(--green-border);color:var(--green-dim);padding:1px 5px;border-radius:2px;margin-left:6px;}
 
-  /* Scanline overlay */
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
-  }
+/* PANELS */
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.panel.active{display:flex;}
 
-  /* Header */
-  header {
-    position: relative;
-    z-index: 10;
-    border-bottom: 1px solid var(--border);
-    padding: 10px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(10,10,10,0.95);
-    backdrop-filter: blur(8px);
-  }
+/* ── CHAT ── */
+.chat-messages{flex:1;overflow-y:auto;padding:24px 28px;scroll-behavior:smooth;}
+.chat-messages::-webkit-scrollbar{width:4px;}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--green-border);}
+.msg{margin-bottom:22px;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.msg-header{font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:10px;}
+.msg-header::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--green-border),transparent);}
+.msg-user .msg-header{color:var(--orange);}
+.msg-body{font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.msg-user .msg-body{color:rgba(255,140,0,0.9);}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;}
+.ascii-art{font-size:11px;line-height:1.4;color:rgba(0,255,65,0.1);margin-bottom:28px;white-space:pre;user-select:none;}
+.sys-status{font-size:10px;letter-spacing:.3em;color:var(--muted);animation:blink 3s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-  .logo {
-    font-family: var(--font-ui);
-    font-weight: 600;
-    font-size: 22px;
-    letter-spacing: 8px;
-    color: var(--green);
-    text-transform: uppercase;
-  }
+.chat-foot{flex-shrink:0;border-top:1px solid var(--green-border);background:var(--bg);}
+.chat-input-area{padding:14px 20px 0;}
+.chat-input-row{display:flex;gap:10px;align-items:flex-end;border:1px solid var(--green-border2);border-radius:3px;background:rgba(0,255,65,0.03);padding:10px 14px;transition:border-color 0.2s;}
+.chat-input-row:focus-within{border-color:rgba(0,255,65,0.5);box-shadow:0 0 20px rgba(0,255,65,0.06);}
+.chat-prompt{color:var(--green);font-size:13px;padding-bottom:2px;}
+.chat-textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;resize:none;min-height:20px;max-height:120px;line-height:1.5;}
+.chat-textarea::placeholder{color:var(--dim);}
+.send-btn{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--bg);background:var(--green);border:none;padding:8px 16px;cursor:pointer;border-radius:2px;transition:all 0.2s;white-space:nowrap;flex-shrink:0;align-self:flex-end;}
+.send-btn:hover{background:#00cc33;box-shadow:0 0 20px rgba(0,255,65,0.4);}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.input-hints{display:flex;justify-content:space-between;padding:6px 20px 8px;font-size:9px;letter-spacing:.12em;color:var(--dim);}
 
-  .logo span {
-    color: var(--text-dim);
-    font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 3px;
-    margin-left: 12px;
-  }
+/* Thinking */
+.thinking{display:inline-flex;gap:4px;align-items:center;}
+.thinking span{width:4px;height:4px;border-radius:50%;background:var(--green);animation:dot 1.4s ease-in-out infinite;}
+.thinking span:nth-child(2){animation-delay:.2s;}
+.thinking span:nth-child(3){animation-delay:.4s;}
+@keyframes dot{0%,80%,100%{transform:scale(.6);opacity:.3;}40%{transform:scale(1);opacity:1;}}
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
+/* ── GÖRSEL ── */
+.visual-panel-inner{display:flex;flex:1;overflow:hidden;}
+.visual-sidebar{width:260px;border-right:1px solid var(--green-border);display:flex;flex-direction:column;flex-shrink:0;}
+.vs-header{padding:12px 16px;border-bottom:1px solid var(--green-border);font-size:9px;letter-spacing:.25em;color:var(--muted);}
+.drop-zone{margin:14px;border:1px dashed var(--green-border2);border-radius:3px;padding:24px 14px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative;background:var(--green-faint);}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--green);background:rgba(0,255,65,0.1);}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:26px;margin-bottom:8px;opacity:0.4;}
+.drop-text{font-size:9px;letter-spacing:.16em;color:var(--muted);line-height:1.9;}
+.drop-text strong{color:var(--green-dim);display:block;font-size:10px;}
+.vs-preview{padding:0 14px 12px;display:none;}
+.vs-preview-label{font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;}
+.vs-preview-img{width:100%;max-height:140px;object-fit:cover;border:1px solid var(--green-border);border-radius:2px;}
+.vs-preview-meta{margin-top:5px;font-size:9px;color:var(--dim);line-height:1.8;}
+.vs-note-wrap{padding:0 14px 10px;}
+.vs-note-label{font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:5px;}
+.vs-note-input{width:100%;background:rgba(0,255,65,0.03);border:1px solid var(--green-border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 9px;border-radius:2px;resize:none;height:60px;outline:none;line-height:1.6;}
+.vs-note-input:focus{border-color:var(--green-border2);}
+.vs-note-input::placeholder{color:var(--dim);}
+.vs-save-btn{width:calc(100% - 28px);margin:0 14px 14px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--bg);background:var(--green);border:none;padding:9px;cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.vs-save-btn:hover{background:#00cc33;}
+.vs-save-btn:disabled{opacity:0.4;cursor:not-allowed;}
 
-  .model-selector {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--green-dim);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 5px 10px;
-    cursor: pointer;
-    outline: none;
-    letter-spacing: 1px;
-    transition: border-color 0.2s;
-  }
+.visual-gallery{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.gallery-toolbar{padding:10px 16px;border-bottom:1px solid var(--green-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.gallery-search{background:transparent;border:1px solid var(--green-border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 9px;border-radius:2px;outline:none;width:180px;}
+.gallery-search:focus{border-color:var(--green-border2);}
+.gallery-search::placeholder{color:var(--dim);}
+.gallery-stats{font-size:9px;letter-spacing:.18em;color:var(--muted);}
+.gallery-grid{flex:1;overflow-y:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start;}
+.gallery-grid::-webkit-scrollbar{width:4px;}
+.gallery-grid::-webkit-scrollbar-thumb{background:var(--green-border);}
+.gallery-empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted);}
+.gallery-empty-icon{font-size:32px;margin-bottom:14px;opacity:0.25;}
+.gallery-empty-text{font-size:9px;letter-spacing:.22em;line-height:2.2;}
+.vis-card{border:1px solid var(--green-border);border-radius:3px;overflow:hidden;cursor:pointer;transition:all 0.2s;background:var(--bg2);}
+.vis-card:hover{border-color:var(--green-border2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.5);}
+.vis-card-img{width:100%;height:100px;object-fit:cover;filter:brightness(0.8) saturate(0.6);transition:filter 0.2s;}
+.vis-card:hover .vis-card-img{filter:brightness(1) saturate(1);}
+.vis-card-body{padding:7px 9px;}
+.vis-card-date{font-size:8px;letter-spacing:.12em;color:var(--muted);margin-bottom:3px;}
+.vis-card-note{font-size:10px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 
-  .model-selector:hover { border-color: var(--border-bright); }
-  .model-selector option { background: #0a0a0a; }
+/* ── SES ── */
+.voice-panel-inner{flex:1;display:flex;flex-direction:column;padding:24px 28px;gap:16px;overflow-y:auto;}
+.voice-section{background:rgba(0,255,65,0.03);border:1px solid var(--green-border);border-radius:4px;padding:18px 20px;}
+.voice-section-title{font-size:9px;letter-spacing:.28em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.voice-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--green-border),transparent);}
+.voice-btn-big{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--muted);background:transparent;border:1px solid var(--green-border);padding:12px 24px;border-radius:3px;cursor:pointer;transition:all 0.2s;width:100%;text-align:center;}
+.voice-btn-big:hover{border-color:var(--green-border2);color:var(--green);}
+.voice-btn-big.active{border-color:var(--green);color:var(--green);background:var(--green-faint);}
+.voice-btn-big.mic-live{border-color:var(--red);color:var(--red);background:rgba(255,51,51,0.08);animation:micPulse 1s ease-in-out infinite;}
+.voice-btn-big.tts-speaking{border-color:var(--green);color:var(--green);background:rgba(0,255,65,0.1);animation:ttsPulse 0.8s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,51,51,0.3);}50%{box-shadow:0 0 0 8px rgba(255,51,51,0);}}
+@keyframes ttsPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,65,0.3);}50%{box-shadow:0 0 0 6px rgba(0,255,65,0);}}
+.voice-status-box{margin-top:12px;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--green-border);border-radius:3px;font-size:10px;letter-spacing:.15em;color:var(--muted);min-height:38px;}
+.voice-status-box.active{color:var(--green-dim);}
+.voice-status-box.mic{color:rgba(255,51,51,0.7);}
+.vol-meter{display:flex;align-items:flex-end;gap:3px;height:24px;margin-top:12px;}
+.vol-bar{width:5px;border-radius:2px;background:var(--green-border);transition:height 0.08s;}
+.voice-info{font-size:10px;color:var(--muted);line-height:1.9;margin-top:10px;}
+.voice-info span{color:var(--green-dim);}
+.stop-btn{width:100%;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--red);background:transparent;border:1px solid rgba(255,51,51,0.3);padding:9px;cursor:pointer;border-radius:3px;transition:all 0.2s;display:none;}
+.stop-btn:hover{background:rgba(255,51,51,0.1);border-color:var(--red);}
+.stop-btn.visible{display:block;}
 
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse 2s infinite;
-  }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;}
+.modal-overlay.open{display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:var(--bg);border:1px solid var(--green-border2);border-radius:4px;max-width:800px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{padding:12px 16px;border-bottom:1px solid var(--green-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:9px;letter-spacing:.25em;color:var(--muted);}
+.modal-close{background:transparent;border:1px solid var(--green-border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 10px;cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+.modal-img-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;border-right:1px solid var(--green-border);background:#020402;}
+.modal-img{max-width:100%;max-height:100%;object-fit:contain;border:1px solid var(--green-border);}
+.modal-side{width:260px;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.modal-sec{padding:14px;border-bottom:1px solid var(--green-border);}
+.modal-sec-title{font-size:8px;letter-spacing:.25em;color:var(--muted);margin-bottom:8px;}
+.modal-row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px;}
+.modal-key{color:var(--muted);}
+.modal-val{color:var(--text);}
+.modal-note-edit{width:100%;background:rgba(0,255,65,0.03);border:1px solid var(--green-border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px;border-radius:2px;resize:none;height:80px;outline:none;line-height:1.6;}
+.modal-del{width:calc(100% - 28px);margin:10px 14px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--red);background:transparent;border:1px solid rgba(255,51,51,0.3);padding:8px;cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.modal-del:hover{background:rgba(255,51,51,0.1);border-color:var(--red);}
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  /* Chat area */
-  #chat {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-    position: relative;
-    z-index: 10;
-    scroll-behavior: smooth;
-  }
-
-  #chat::-webkit-scrollbar { width: 4px; }
-  #chat::-webkit-scrollbar-track { background: transparent; }
-  #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .msg {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 20px;
-    animation: fadeIn 0.25s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .msg-tag {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-top: 3px;
-    min-width: 56px;
-    text-align: right;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  .msg.user .msg-tag { color: rgba(0,255,65,0.5); }
-
-  .msg-body {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text);
-    max-width: 720px;
-    word-break: break-word;
-  }
-
-  .msg.user .msg-body {
-    color: var(--green);
-  }
-
-  .msg-body pre {
-    background: var(--green-faint);
-    border: 1px solid var(--border);
-    border-left: 2px solid var(--green-dim);
-    padding: 12px 16px;
-    margin: 10px 0;
-    overflow-x: auto;
-    font-size: 13px;
-    border-radius: 0;
-  }
-
-  .msg-body code {
-    background: var(--green-faint);
-    padding: 1px 5px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    border: 1px solid var(--border);
-  }
-
-  /* Typing indicator */
-  .typing-indicator {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 0;
-  }
-
-  .typing-indicator span {
-    width: 6px; height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    animation: blink 1.2s infinite;
-  }
-
-  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-  @keyframes blink {
-    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-    40% { opacity: 1; transform: scale(1); }
-  }
-
-  /* Boot message */
-  .boot-msg {
-    text-align: center;
-    padding: 40px 0;
-    color: var(--text-dim);
-    font-size: 12px;
-    letter-spacing: 2px;
-  }
-
-  .boot-msg .ascii {
-    color: rgba(0,255,65,0.25);
-    font-size: 11px;
-    line-height: 1.4;
-    margin-bottom: 20px;
-    white-space: pre;
-  }
-
-  /* Input area */
-  footer {
-    position: relative;
-    z-index: 10;
-    border-top: 1px solid var(--border);
-    padding: 16px 24px;
-    background: rgba(10,10,10,0.97);
-    backdrop-filter: blur(8px);
-  }
-
-  .input-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    border: 1px solid var(--border);
-    padding: 10px 14px;
-    transition: border-color 0.2s;
-    background: var(--bg2);
-  }
-
-  .input-row:focus-within {
-    border-color: var(--border-bright);
-    box-shadow: 0 0 12px rgba(0,255,65,0.06);
-  }
-
-  .input-prompt {
-    color: var(--green-dim);
-    font-size: 14px;
-    padding-bottom: 1px;
-    flex-shrink: 0;
-    user-select: none;
-  }
-
-  #user-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--green);
-    font-family: var(--font-mono);
-    font-size: 14px;
-    outline: none;
-    resize: none;
-    min-height: 22px;
-    max-height: 120px;
-    line-height: 1.5;
-    caret-color: var(--green);
-  }
-
-  #user-input::placeholder { color: var(--text-dim); }
-
-  .send-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--green-dim);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 2px;
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-    flex-shrink: 0;
-    text-transform: uppercase;
-  }
-
-  .send-btn:hover {
-    border-color: var(--green);
-    color: var(--green);
-    background: var(--green-faint);
-  }
-
-  .send-btn:active { transform: scale(0.97); }
-
-  .footer-hint {
-    margin-top: 8px;
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    display: flex;
-    justify-content: space-between;
-  }
-
-  /* Error */
-  .error-msg {
-    color: #ff4141;
-    font-size: 12px;
-    padding: 4px 0;
-  }
-
-  /* Session counter */
-  #session-id {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
+*::-webkit-scrollbar{width:4px;height:4px;}
+*::-webkit-scrollbar-track{background:transparent;}
+*::-webkit-scrollbar-thumb{background:var(--green-border);}
 </style>
 </head>
 <body>
+<div class="shell">
 
-<canvas id="matrix-rain"></canvas>
-
-<header>
-  <div>
-    <div class="logo">THEIA <span>SOUL // v0.1</span></div>
-  </div>
-  <div class="header-right">
-    <select class="model-selector" id="model-select">
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <h1>THEIA</h1>
+      <p>SOUL // V0.3</p>
+    </div>
+    <select class="model-select" id="modelSelect">
       <option value="claude">CLAUDE</option>
       <option value="deepseek">DEEPSEEK</option>
       <option value="kimi">KIMI</option>
       <option value="ollama">OLLAMA</option>
     </select>
-    <span id="session-id">SES://—</span>
-    <div class="status-dot"></div>
-  </div>
-</header>
-
-<div id="chat">
-  <div class="boot-msg">
-    <div class="ascii">
- _____ _   _ _____ ___   _
-|_   _| | | | ____|_ _| / \
-  | | | |_| |  _|  | | / _ \
-  | | |  _  | |___ | |/ ___ \
-  |_| |_| |_|_____|___/_/   \_\
+    <div class="hdr-right">
+      <div>
+        <div class="ses-label">SES://</div>
+        <div class="ses-val" id="sesVal">—</div>
+      </div>
+      <div class="status-dot"></div>
     </div>
-    <div>SYSTEM ONLINE — AWAITING INPUT</div>
+  </header>
+
+  <!-- TABS -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="chat">SOHBET</button>
+    <button class="tab-btn" data-tab="visual">GÖRSEL <span class="tab-count" id="visualCount">0</span></button>
+    <button class="tab-btn" data-tab="voice">SES</button>
+  </nav>
+
+  <!-- ── SOHBET ── -->
+  <div class="panel active" id="panel-chat">
+    <div class="chat-messages" id="chatMessages">
+      <div class="empty-state" id="emptyState">
+        <pre class="ascii-art">
+ _____ _   _ ___ ___ ___
+|_   _| | | | __| __|   \
+  | | | |_| | _|| _|| |) |
+  |_|  \___/|___|___|___/
+        </pre>
+        <div class="sys-status">SYSTEM ONLINE — AWAITING INPUT</div>
+      </div>
+    </div>
+    <div class="chat-foot">
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <span class="chat-prompt">&gt;_</span>
+          <textarea class="chat-textarea" id="chatInput" placeholder="mesajını gir..." rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">GÖNDER</button>
+        </div>
+      </div>
+      <div class="input-hints">
+        <span>ENTER → gönder &nbsp;|&nbsp; SHIFT+ENTER → yeni satır</span>
+        <span id="charCount">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GÖRSEL ── -->
+  <div class="panel" id="panel-visual">
+    <div class="visual-panel-inner">
+      <div class="visual-sidebar">
+        <div class="vs-header">// GÖRSEL YÜKLEYİCİ</div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*">
+          <div class="drop-icon">⬡</div>
+          <div class="drop-text"><strong>SÜRÜKLE & BIRAK</strong>veya tıkla<br>JPG · PNG · WEBP</div>
+        </div>
+        <div class="vs-preview" id="previewWrap">
+          <div class="vs-preview-label">// ÖN İZLEME</div>
+          <img class="vs-preview-img" id="previewImg" alt="">
+          <div class="vs-preview-meta" id="previewMeta"></div>
+        </div>
+        <div class="vs-note-wrap">
+          <div class="vs-note-label">// NOT</div>
+          <textarea class="vs-note-input" id="noteInput" placeholder="bu görsel hakkında..."></textarea>
+        </div>
+        <button class="vs-save-btn" id="saveBtn" disabled>⬡ HAFIZAYA KAYDET</button>
+      </div>
+      <div class="visual-gallery">
+        <div class="gallery-toolbar">
+          <input type="text" class="gallery-search" id="gallerySearch" placeholder="// ara...">
+          <div class="gallery-stats" id="galleryStats">0 GÖRSEL</div>
+        </div>
+        <div class="gallery-grid" id="galleryGrid">
+          <div class="gallery-empty">
+            <div class="gallery-empty-icon">⬡</div>
+            <div class="gallery-empty-text">GÖRSEL HAFIZA BOŞ<br>İLK GÖRSELİNİ YÜKLE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SES ── -->
+  <div class="panel" id="panel-voice">
+    <div class="voice-panel-inner">
+
+      <div class="voice-section">
+        <div class="voice-section-title">// MİKROFON · STT</div>
+        <button class="voice-btn-big" id="micBtn">🎤 MİKROFON BAŞLAT</button>
+        <div class="vol-meter" id="volMeter">
+          <div class="vol-bar" id="vb1" style="height:4px"></div>
+          <div class="vol-bar" id="vb2" style="height:7px"></div>
+          <div class="vol-bar" id="vb3" style="height:10px"></div>
+          <div class="vol-bar" id="vb4" style="height:7px"></div>
+          <div class="vol-bar" id="vb5" style="height:4px"></div>
+          <div class="vol-bar" id="vb6" style="height:6px"></div>
+          <div class="vol-bar" id="vb7" style="height:9px"></div>
+          <div class="vol-bar" id="vb8" style="height:5px"></div>
+        </div>
+        <div class="voice-status-box" id="micStatus">// BEKLİYOR</div>
+        <button class="stop-btn" id="micStopBtn">⬛ DİNLEMEYİ DURDUR</button>
+        <div class="voice-info">
+          Konuşunca metin otomatik <span>SOHBET</span> sekmesine gider ve gönderilir.<br>
+          TTS aktifse Theia sesli yanıt verir.
+        </div>
+      </div>
+
+      <div class="voice-section">
+        <div class="voice-section-title">// TTS · SES ÇIKIŞI</div>
+        <button class="voice-btn-big" id="ttsBtn">🔇 TTS: KAPALI</button>
+        <div class="voice-status-box" id="ttsStatus">// TTS KAPALI</div>
+        <button class="stop-btn" id="ttsStopBtn">⬛ SESİ DURDUR</button>
+        <div class="voice-info">
+          TTS açıkken Theia'nın her yanıtı <span>Edge TTS</span> ile seslendirilir.<br>
+          Mikrofon aktifken TTS otomatik duraklar — döngü önleme.
+        </div>
+      </div>
+
+      <div class="voice-section">
+        <div class="voice-section-title">// SES TEST</div>
+        <button class="voice-btn-big" id="testTtsBtn">▶ TEST SESİ ÇALAR</button>
+        <div class="voice-status-box" id="testStatus">// HAZIR</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">// GÖRSEL HAFIZA</span>
+      <button class="modal-close" id="modalClose">KAPAT ✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-img-wrap"><img class="modal-img" id="modalImg" alt=""></div>
+      <div class="modal-side">
+        <div class="modal-sec">
+          <div class="modal-sec-title">// META</div>
+          <div class="modal-row"><span class="modal-key">TARİH</span><span class="modal-val" id="mDate">—</span></div>
+          <div class="modal-row"><span class="modal-key">BOYUT</span><span class="modal-val" id="mSize">—</span></div>
+          <div class="modal-row"><span class="modal-key">TÜR</span><span class="modal-val" id="mType">—</span></div>
+          <div class="modal-row"><span class="modal-key">STATUS</span><span class="modal-val" style="color:var(--green)">ACTIVE</span></div>
+        </div>
+        <div class="modal-sec">
+          <div class="modal-sec-title">// NOT</div>
+          <textarea class="modal-note-edit" id="mNote"></textarea>
+        </div>
+        <button class="modal-del" id="mDel">⬡ HAFIZADAN SİL</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<footer>
-  <div class="input-row">
-    <span class="input-prompt">&gt;_</span>
-    <textarea id="user-input" rows="1" placeholder="mesajını gir..."></textarea>
-    <button class="send-btn" id="send-btn">GÖNDER</button>
-  </div>
-  <div class="footer-hint">
-    <span>ENTER → gönder &nbsp;|&nbsp; SHIFT+ENTER → yeni satır</span>
-    <span id="char-count">0</span>
-  </div>
-</footer>
-
 <script>
-// === Matrix Rain ===
-const canvas = document.getElementById('matrix-rain');
-const ctx = canvas.getContext('2d');
-let cols, drops;
+// ── CONFIG ─────────────────────────────────────
+const SOUL_API = 'http://100.115.79.121:8000';  // relative — aynı origin
+const VM_KEY   = 'theia_vm_v3';
 
-function initMatrix() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const fontSize = 14;
-  cols = Math.floor(canvas.width / fontSize);
-  drops = Array(cols).fill(1);
-}
+// ── STATE ──────────────────────────────────────
+let visualMemory = [];
+let currentModalId = null;
+let pendingFile = null;
+let sessionId = 'ses_' + Math.random().toString(36).slice(2,8).toUpperCase();
 
-function drawMatrix() {
-  ctx.fillStyle = 'rgba(10,10,10,0.05)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#00ff41';
-  ctx.font = '14px Share Tech Mono';
-  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ01';
-  for (let i = 0; i < drops.length; i++) {
-    const ch = chars[Math.floor(Math.random() * chars.length)];
-    ctx.fillText(ch, i * 14, drops[i] * 14);
-    if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-    drops[i]++;
-  }
-}
+// Ses state
+let ttsEnabled  = localStorage.getItem('theia_tts') === 'true';
+let isSpeaking  = false;
+let isListening = false;
+let currentAudio = null;
+let recognition  = null;
+let volAnimId    = null;
 
-initMatrix();
-setInterval(drawMatrix, 55);
-window.addEventListener('resize', initMatrix);
+// ── BOOT ───────────────────────────────────────
+function init() {
+  loadVM();
+  renderGallery();
+  updateTabCount();
+  document.getElementById('sesVal').textContent = sessionId.replace('ses_','');
 
-// === State ===
-let sessionId = null;
-const model = () => document.getElementById('model-select').value;
-const chatEl = document.getElementById('chat');
-const inputEl = document.getElementById('user-input');
-
-// === Session ===
-async function ensureSession() {
-  if (sessionId) return;
-  sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
   });
-  document.getElementById('session-id').textContent = 'SES://' + sessionId.slice(0, 8).toUpperCase();
+
+  // Chat
+  const input = document.getElementById('chatInput');
+  input.addEventListener('input', () => {
+    document.getElementById('charCount').textContent = input.value.length;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+  document.getElementById("sendBtn").addEventListener("click", () => sendChat());
+
+  // Visual
+  document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+  document.getElementById('saveBtn').addEventListener('click', saveVisual);
+  document.getElementById('gallerySearch').addEventListener('input', () => renderGallery(document.getElementById('gallerySearch').value));
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+  document.getElementById('mDel').addEventListener('click', deleteVisual);
+
+  // Voice
+  initVoice();
 }
 
-// === Render ===
-function appendMsg(role, content) {
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-
-  const tag = document.createElement('div');
-  tag.className = 'msg-tag';
-  tag.textContent = role === 'user' ? 'SEN' : 'THEIA';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-
-  // Basic markdown: code blocks
-  let html = content
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<strong style="color:var(--green)">$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong style="font-size:15px;color:var(--green)">$1</strong>')
-    .replace(/^# (.+)$/gm, '<strong style="font-size:16px;color:var(--green)">$1</strong>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^---$/gm, '<hr style="border-color:var(--border);margin:8px 0">')
-    .replace(/\n/g, '<br>');;
-
-  body.innerHTML = html;
-  div.appendChild(tag);
-  div.appendChild(body);
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  return body;
-}
-
-function showTyping() {
-  const div = document.createElement('div');
-  div.className = 'msg assistant';
-  div.id = 'typing-msg';
-
-  const tag = document.createElement('div');
-  tag.className = 'msg-tag';
-  tag.textContent = 'THEIA';
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-
-  div.appendChild(tag);
-  div.appendChild(body);
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function removeTyping() {
-  const el = document.getElementById('typing-msg');
-  if (el) el.remove();
-}
-
-// === Send ===
-async function send() {
-  const text = inputEl.value.trim();
+// ── CHAT ───────────────────────────────────────
+async function sendChat(overrideText) {
+  const input = document.getElementById('chatInput');
+  const text = overrideText || input.value.trim();
   if (!text) return;
 
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  document.getElementById('char-count').textContent = '0';
+  const es = document.getElementById('emptyState');
+  if (es) es.remove();
 
-  appendMsg('user', text);
-  showTyping();
+  appendMsg('user', 'KAPTAN', text);
+  if (!overrideText) { input.value = ''; input.style.height = 'auto'; }
+  document.getElementById('charCount').textContent = '0';
+  document.getElementById('sendBtn').disabled = true;
+
+  const thinkId = appendThinking();
 
   try {
-    await ensureSession();
-
-    const res = await fetch('/api/chat', {
+    const resp = await fetch(SOUL_API + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, message: text, model: model() })
+      body: JSON.stringify({
+        message: text,
+        session_id: sessionId,
+        model: document.getElementById('modelSelect').value,
+        max_tokens: 2048,
+        temperature: 0.7
+      })
     });
+    if (!resp.ok) throw new Error('Soul ' + resp.status);
+    const data = await resp.json();
+    const reply = data.message || '';
+    removeThinking(thinkId);
+    appendMsg('assistant', 'THEIA', reply);
+    if (ttsEnabled && !isListening) speakText(reply);
+  } catch(e) {
+    removeThinking(thinkId);
+    appendMsg('assistant', 'SYS', 'Hata: ' + e.message);
+  }
 
-    removeTyping();
+  document.getElementById('sendBtn').disabled = false;
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      appendMsg('assistant', '[ HATA: ' + (err.detail || res.status) + ' ]');
-      return;
+  // Ses sekmesine geç gerekmez, SOHBET'te kal
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="chat"]').classList.add('active');
+  document.getElementById('panel-chat').classList.add('active');
+}
+
+function appendMsg(role, label, text) {
+  const msgs = document.getElementById('chatMessages');
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + role;
+  d.innerHTML = `<div class="msg-header">${label} · ${formatTime(new Date())}</div><div class="msg-body">${esc(text)}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function appendThinking() {
+  const id = 'th_' + Date.now();
+  const msgs = document.getElementById('chatMessages');
+  const d = document.createElement('div');
+  d.id = id; d.className = 'msg msg-assistant';
+  d.innerHTML = `<div class="msg-header">THEIA · işleniyor</div><div class="msg-body"><div class="thinking"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+function removeThinking(id) { const e = document.getElementById(id); if(e) e.remove(); }
+
+// ── GÖRSEL ─────────────────────────────────────
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  pendingFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingFile._b64 = e.target.result;
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewMeta').textContent = file.name + ' · ' + formatBytes(file.size);
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('saveBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveVisual() {
+  if (!pendingFile?._b64) return;
+  const note = document.getElementById('noteInput').value.trim();
+  const entry = {
+    id: 'v_' + Date.now(),
+    date: new Date().toISOString(),
+    filename: pendingFile.name,
+    size: pendingFile.size,
+    type: pendingFile.type,
+    b64: pendingFile._b64,
+    note: note,
+    status: 'active'
+  };
+  visualMemory.unshift(entry);
+  saveVM();
+  renderGallery();
+  updateTabCount();
+  // Reset
+  pendingFile = null;
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('saveBtn').disabled = true;
+}
+
+function renderGallery(filter = '') {
+  const grid = document.getElementById('galleryGrid');
+  const filtered = filter
+    ? visualMemory.filter(v => v.note.toLowerCase().includes(filter.toLowerCase()) || v.filename.toLowerCase().includes(filter.toLowerCase()))
+    : visualMemory;
+  document.getElementById('galleryStats').textContent = filtered.length + ' GÖRSEL';
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="gallery-empty"><div class="gallery-empty-icon">⬡</div><div class="gallery-empty-text">${filter ? 'SONUÇ YOK' : 'GÖRSEL HAFIZA BOŞ<br>İLK GÖRSELİNİ YÜKLE'}</div></div>`;
+    return;
+  }
+  grid.innerHTML = '';
+  filtered.forEach(v => {
+    const c = document.createElement('div');
+    c.className = 'vis-card';
+    c.innerHTML = `<img class="vis-card-img" src="${v.b64}" alt=""><div class="vis-card-body"><div class="vis-card-date">${formatDate(v.date)}</div><div class="vis-card-note">${esc(v.note || v.filename)}</div></div>`;
+    c.addEventListener('click', () => openModal(v.id));
+    grid.appendChild(c);
+  });
+}
+
+function openModal(id) {
+  const v = visualMemory.find(x => x.id === id);
+  if (!v) return;
+  currentModalId = id;
+  document.getElementById('modalImg').src = v.b64;
+  document.getElementById('modalTitle').textContent = '// ' + v.filename;
+  document.getElementById('mDate').textContent = formatDate(v.date);
+  document.getElementById('mSize').textContent = formatBytes(v.size);
+  document.getElementById('mType').textContent = v.type.split('/')[1].toUpperCase();
+  document.getElementById('mNote').value = v.note || '';
+  document.getElementById('mNote').oninput = () => {
+    const entry = visualMemory.find(x => x.id === currentModalId);
+    if (entry) { entry.note = document.getElementById('mNote').value; saveVM(); }
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); currentModalId = null; }
+function deleteVisual() {
+  if (!currentModalId) return;
+  if (!confirm('Hafızadan sil?')) return;
+  visualMemory = visualMemory.filter(v => v.id !== currentModalId);
+  saveVM(); closeModal(); renderGallery(); updateTabCount();
+}
+function updateTabCount() { document.getElementById('visualCount').textContent = visualMemory.length; }
+function loadVM() { try { visualMemory = JSON.parse(localStorage.getItem(VM_KEY) || '[]'); } catch { visualMemory = []; } }
+function saveVM() { try { localStorage.setItem(VM_KEY, JSON.stringify(visualMemory)); } catch(e) { console.warn('Storage full'); } }
+
+// ── SES ────────────────────────────────────────
+function initVoice() {
+  updateTtsBtn();
+
+  // TTS toggle
+  document.getElementById('ttsBtn').addEventListener('click', () => {
+    ttsEnabled = !ttsEnabled;
+    localStorage.setItem('theia_tts', ttsEnabled);
+    if (!ttsEnabled) stopAudio();
+    updateTtsBtn();
+  });
+
+  // TTS durdur
+  document.getElementById('ttsStopBtn').addEventListener('click', stopAudio);
+
+  // TTS test
+  document.getElementById('testTtsBtn').addEventListener('click', async () => {
+    document.getElementById('testStatus').textContent = '// ÇALINIYOR...';
+    document.getElementById('testStatus').className = 'voice-status-box active';
+    await speakText('Merhaba Kaptan. Ses sistemi çalışıyor.');
+    document.getElementById('testStatus').textContent = '// TAMAMLANDI';
+  });
+
+  // Mikrofon
+  document.getElementById('micBtn').addEventListener('click', toggleMic);
+  document.getElementById('micStopBtn').addEventListener('click', stopListening);
+
+  // SpeechRecognition
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('micBtn').textContent = '🚫 TARAYICI DESTEKLEMİYOR';
+    document.getElementById('micBtn').style.opacity = '0.4';
+    document.getElementById('micStatus').textContent = '// Web Speech API yok — Chrome/Chromium gerekli';
+    return;
+  }
+  recognition = new SR();
+  recognition.lang = 'tr-TR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript.trim();
+    if (t) {
+      setMicStatus('// ALINDI: ' + t, 'active');
+      stopListening();
+      // Sohbet sekmesine gönder
+      document.getElementById('chatInput').value = t;
+      sendChat(t);
     }
+  };
+  recognition.onerror = e => { setMicStatus('// HATA: ' + e.error, ''); stopListening(); };
+  recognition.onend = () => { if (isListening) stopListening(); };
+}
 
-    const data = await res.json();
-    appendMsg('assistant', data.message || data.response || data.content || JSON.stringify(data));
+function toggleMic() { isListening ? stopListening() : startListening(); }
 
-  } catch (e) {
-    removeTyping();
-    appendMsg('assistant', '[ BAĞLANTI HATASI: ' + e.message + ' ]');
+function startListening() {
+  if (isSpeaking) stopAudio();
+  if (!recognition) return;
+  isListening = true;
+  try { recognition.start(); } catch(e) { isListening = false; return; }
+  document.getElementById('micBtn').textContent = '🔴 DİNLİYOR — KONUŞ';
+  document.getElementById('micBtn').classList.add('mic-live');
+  document.getElementById('micStopBtn').classList.add('visible');
+  setMicStatus('// DİNLİYORUM...', 'mic');
+  startVolAnim();
+}
+
+function stopListening() {
+  isListening = false;
+  try { recognition?.stop(); } catch(e) {}
+  document.getElementById('micBtn').textContent = '🎤 MİKROFON BAŞLAT';
+  document.getElementById('micBtn').classList.remove('mic-live');
+  document.getElementById('micStopBtn').classList.remove('visible');
+  setMicStatus('// BEKLİYOR', '');
+  stopVolAnim();
+}
+
+async function speakText(text) {
+  if (!ttsEnabled || !text.trim() || isListening) return;
+  stopAudio();
+  const clean = text.replace(/[*#`>\[\]]/g, '').slice(0, 800);
+  setTtsStatus('// KONUŞUYOR...', 'active');
+  document.getElementById('ttsBtn').classList.add('tts-speaking');
+  document.getElementById('ttsStopBtn').classList.add('visible');
+  isSpeaking = true;
+  try {
+    const resp = await fetch(SOUL_API + '/api/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice: 'tr', rate: '+0%' })
+    });
+    if (!resp.ok) throw new Error('TTS ' + resp.status);
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.onended = () => { isSpeaking = false; URL.revokeObjectURL(url); resetTtsBtn(); };
+    currentAudio.onerror = () => { isSpeaking = false; resetTtsBtn(); };
+    await currentAudio.play();
+  } catch(e) {
+    isSpeaking = false;
+    resetTtsBtn();
+    setTtsStatus('// TTS BAĞLANTI HATASI', '');
   }
 }
 
-// === Input events ===
-inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    send();
+function stopAudio() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  isSpeaking = false;
+  resetTtsBtn();
+}
+
+function resetTtsBtn() {
+  document.getElementById('ttsBtn').classList.remove('tts-speaking');
+  document.getElementById('ttsStopBtn').classList.remove('visible');
+  setTtsStatus(ttsEnabled ? '// TTS AÇIK · HAZIR' : '// TTS KAPALI', '');
+}
+
+function updateTtsBtn() {
+  const btn = document.getElementById('ttsBtn');
+  btn.textContent = ttsEnabled ? '🔊 TTS: AÇIK' : '🔇 TTS: KAPALI';
+  btn.classList.toggle('active', ttsEnabled);
+  setTtsStatus(ttsEnabled ? '// TTS AÇIK · HAZIR' : '// TTS KAPALI', '');
+}
+
+function setMicStatus(t, cls) {
+  const el = document.getElementById('micStatus');
+  el.textContent = t; el.className = 'voice-status-box' + (cls ? ' ' + cls : '');
+}
+function setTtsStatus(t, cls) {
+  const el = document.getElementById('ttsStatus');
+  el.textContent = t; el.className = 'voice-status-box' + (cls ? ' ' + cls : '');
+}
+
+function startVolAnim() {
+  const ids = ['vb1','vb2','vb3','vb4','vb5','vb6','vb7','vb8'];
+  const base = [4,7,10,7,4,6,9,5];
+  function frame() {
+    ids.forEach((id,i) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const h = isListening ? Math.max(2, base[i] + (Math.random()-0.5)*14) : base[i];
+      el.style.height = Math.min(22, Math.max(2, h)) + 'px';
+      el.style.background = isListening ? 'var(--red)' : 'var(--green-border)';
+    });
+    if (isListening) volAnimId = requestAnimationFrame(frame);
   }
-});
+  volAnimId = requestAnimationFrame(frame);
+}
+function stopVolAnim() {
+  if (volAnimId) { cancelAnimationFrame(volAnimId); volAnimId = null; }
+  ['vb1','vb2','vb3','vb4','vb5','vb6','vb7','vb8'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (el) { el.style.height = [4,7,10,7,4,6,9,5][i] + 'px'; el.style.background = 'var(--green-border)'; }
+  });
+}
 
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-  document.getElementById('char-count').textContent = inputEl.value.length;
-});
+// ── UTILS ──────────────────────────────────────
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+}
+function formatTime(d) { return d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}); }
+function formatBytes(b) {
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(1)+'KB';
+  return (b/1048576).toFixed(2)+'MB';
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
-document.getElementById('send-btn').addEventListener('click', send);
-
-// Reset session if model changes
-document.getElementById('model-select').addEventListener('change', () => {
-  sessionId = null;
-  document.getElementById('session-id').textContent = 'SES://—';
-});
+init();
 </script>
 </body>
 </html>
