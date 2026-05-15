@@ -860,7 +860,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 </div>
 
 <script>
-const SOUL_API = 'http://localhost:8000';
+const SOUL_API = (window.location.port === '8000' || window.location.hostname !== 'localhost')
+  ? window.location.origin
+  : 'http://localhost:8000';
+const SOUL_WS = SOUL_API.replace(/^http/, 'ws');
 
 /* ── STATE ── */
 let sesId = 'SES_' + Math.random().toString(36).slice(2,6).toUpperCase();
@@ -1373,7 +1376,7 @@ async function startListening() {
     // Vosk WebSocket STT
     try {
       const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
-      const ws = new WebSocket('ws://localhost:8000/api/ws/stt');
+      const ws = new WebSocket(SOUL_WS + '/api/ws/stt');
       ws.binaryType = 'arraybuffer';
       await new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('WS bağlantısı başarısız')); });
       const audioCtx = new AudioContext({sampleRate: 16000});
@@ -1676,7 +1679,7 @@ function startPassiveListening() {
         console.error("AudioContext başlatılamadı:", e);
         return;
     }
-    wakeSocket = new WebSocket('ws://localhost:8000/api/ws/stt');
+    wakeSocket = new WebSocket(SOUL_WS + '/api/ws/stt');
     wakeSocket.binaryType = 'arraybuffer';
 
     navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true } })
@@ -1722,7 +1725,7 @@ function wakeUp() {
     if (wakeTimeout) clearTimeout(wakeTimeout);
     wakeStatus('Hey Theia! Kaptan Theia seni dinliyor...', '#ff0');
 
-    fetch('/api/speak', {
+    fetch(SOUL_API + '/api/speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: 'Kaptan Theia seni dinliyor', voice: 'tr' })

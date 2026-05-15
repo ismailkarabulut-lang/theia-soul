@@ -333,29 +333,36 @@ def _get_vosk_model():
 @router.websocket("/ws/stt")
 async def stt_ws(ws: WebSocket):
     from starlette.websockets import WebSocketDisconnect
+    import concurrent.futures
     await ws.accept()
+    loop = asyncio.get_event_loop()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     try:
         from vosk import KaldiRecognizer
         model = _get_vosk_model()
         rec = KaldiRecognizer(model, 16000)
+
+        def _process(raw: bytes):
+            if rec.AcceptWaveform(raw):
+                r = json.loads(rec.Result())
+                return r.get("text", "").strip(), True
+            else:
+                p = json.loads(rec.PartialResult())
+                return p.get("partial", "").strip(), False
+
         while True:
             data = await ws.receive_bytes()
-            if rec.AcceptWaveform(bytes(data)):
-                result = json.loads(rec.Result())
-                text = result.get("text", "").strip()
-                if text:
-                    await ws.send_json({"text": text, "final": True})
-            else:
-                partial = json.loads(rec.PartialResult())
-                ptext = partial.get("partial", "").strip()
-                if ptext:
-                    await ws.send_json({"text": ptext, "final": False})
+            text, final = await loop.run_in_executor(executor, _process, bytes(data))
+            if text:
+                await ws.send_json({"text": text, "final": final})
     except WebSocketDisconnect:
         pass
     except RuntimeError:
         pass
     except Exception as e:
         logging.warning(f"STT WS hatası: {e}")
+    finally:
+        executor.shutdown(wait=False)
 
 
 # --- YouTube Arama ---
