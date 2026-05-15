@@ -1,5 +1,5 @@
 # CLAUDE.md — Theia Projesi · Oturum Bağlamı
-> Son güncelleme: 2026.05.16 · Soul API v0.1.0
+> Son güncelleme: 2026.05.16 · Soul API v0.2.0
 
 Bu dosya yeni bir AI oturumu açıldığında projeyi sıfırdan anlamak için yazılmıştır.
 Tahmin veya yorum yoktur — her satır çalışan koddan türetilmiştir.
@@ -39,63 +39,93 @@ vault üzerine kuruludur.
 - **Çalıştıran:** `systemd` → `/usr/bin/python3 /home/ismail/theia/main.py`
 - **Kaynak dizin:** `~/theia/` (theia-soul'dan AYRI repo/dizin)
 - **Durum:** Aktif, polling modunda, dakikada bir `minute_job` çalışıyor
-- **Not:** Eski CLAUDE.md'de "kapatılacak" yazıyordu — bu yanlıştı. Bot aktif ve kullanımda.
+
+### 3. `theia-electron.service` — Electron Masaüstü Uygulaması (Kullanıcı Oturumu)
+- **Çalıştıran:** `systemd --user` → `/usr/bin/npm start --prefix /home/ismail/theia-electron`
+- **Konum:** `~/.config/systemd/user/theia-electron.service`
+- **Başlangıç:** Kullanıcı oturumu açıldığında otomatik
+- **Not:** Wake word pasif dinlemesi sayfa yüklendiğinde başlar
 
 ---
 
 ## Dizin Yapısı
 
-```
-~/theia-soul/               ← Soul API ana dizini (bu reponun kaynağı)
-├── main.py                 ← FastAPI app, router kayıtları, static mount
-├── persona_engine.py       ← Read-only analiz motoru (theia.db okur)
-├── obsidian_bridge.py      ← Obsidian → Soul DB senkronizasyon scripti (cron, 15dk)
-├── soul.db                 ← SQLite: gorevler tablosu burada
-├── .env                    ← API anahtarları (git'e girmiyor)
+~/theia-soul/ ← Soul API ana dizini (bu reponun kaynağı)
+├── CLAUDE.md ← Bu dosya
+├── main.py ← FastAPI app, router kayıtları, static mount
+├── persona_engine.py ← Read-only analiz motoru (theia.db okur)
+├── obsidian_bridge.py ← Obsidian → Soul DB senkronizasyon scripti (cron, 15dk)
+├── soul.db ← SQLite: gorevler tablosu burada
+├── .env ← API anahtarları (git'e girmiyor)
 │
 ├── core/
-│   ├── config.py           ← .env okur, tüm sabitleri tanımlar
-│   ├── db.py               ← SQLite async bağlantı, memory/session/message CRUD
-│   ├── base_model.py       ← BaseModel abstract sınıf, GenerateRequest, Message
-│   └── theia_soul.py       ← Theia sistem promptu (build_system fonksiyonu)
+│ ├── config.py ← .env okur, tüm sabitleri tanımlar
+│ ├── db.py ← SQLite async bağlantı, memory/session/message CRUD
+│ ├── base_model.py ← BaseModel abstract sınıf, GenerateRequest, Message
+│ └── theia_soul.py ← Theia sistem promptu (build_system fonksiyonu)
 │
 ├── models/
-│   ├── factory.py          ← get_model("claude"|"deepseek"|"kimi"|"ollama") → singleton
-│   ├── claude_model.py     ← Anthropic Claude (varsayılan)
-│   ├── deepseek_model.py   ← DeepSeek API
-│   ├── kimi_model.py       ← Moonshot/Kimi API
-│   └── ollama_model.py     ← Yerel Ollama (llama3 varsayılan)
+│ ├── factory.py ← get_model("claude"|"deepseek"|"kimi"|"ollama") → singleton
+│ ├── claude_model.py ← Anthropic Claude (varsayılan)
+│ ├── deepseek_model.py ← DeepSeek API
+│ ├── kimi_model.py ← Moonshot/Kimi API
+│ └── ollama_model.py ← Yerel Ollama (llama3 varsayılan)
 │
 ├── api/
-│   ├── routes.py           ← Tüm ana endpoint'ler + WebSocket STT (/api/ws/stt)
-│   ├── persona.py          ← GET /api/persona/snapshot endpoint'i
-│   └── schemas.py          ← Pydantic modeller
+│ ├── routes.py ← Tüm ana endpoint'ler + WebSocket STT (/api/ws/stt) + YouTube endpoint'i
+│ ├── persona.py ← GET /api/persona/snapshot endpoint'i
+│ └── schemas.py ← Pydantic modeller
 │
-├── vosk-models/            ← Offline STT modelleri (git'e girmiyor)
-│   └── vosk-model-small-tr-0.3/  ← 36MB Türkçe Vosk modeli
+├── vosk-models/ ← Offline STT modelleri (git'e girmiyor)
+│ └── vosk-model-small-tr-0.3/ ← 36MB Türkçe Vosk modeli
 │
 ├── memory/
-│   └── theia.db            ← SQLite: memory + messages + sessions tabloları
+│ └── theia.db ← SQLite: memory + messages + sessions tabloları
 │
-└── static/                 ← Web arayüzü (Soul HUD) — FastAPI'den statik servis edilir
-    ├── index.html          ← ANA KAYNAK — tek sayfa uygulama (tüm modüller burada)
-    ├── persona.html        ← Persona analiz sayfası (/persona endpoint'i)
-    ├── hud.html            ← HUD görünümü
-    └── modules/
-        ├── vault.js        ← Vault modülü JS
-        ├── persona.js      ← Persona modülü JS
-        ├── saglik.js       ← Sağlık modülü JS
-        ├── gorev.js        ← Görev modülü JS
-        └── team.js         ← Team modülü JS
+└── static/ ← Web arayüzü (Soul HUD) — FastAPI'den statik servis edilir
+├── index.html ← ANA KAYNAK — tek sayfa uygulama (Wake Word motoru içerir)
+├── index.html.bak ← Wake Word ekleme öncesi yedek
+├── persona.html ← Persona analiz sayfası (/persona endpoint'i)
+├── hud.html ← HUD görünümü
+└── modules/
+├── vault.js ← Vault modülü JS
+├── persona.js ← Persona modülü JS
+├── saglik.js ← Sağlık modülü JS
+├── gorev.js ← Görev modülü JS
+└── team.js ← Team modülü JS
 
-~/theia-electron/           ← Electron masaüstü uygulaması (ayrı dizin)
-├── main.js                 ← Electron ana prosesi (mikrofon izni, PipeWire, no-sandbox)
-└── package.json            ← electron . --no-sandbox
+~/theia-mobile/ ← APK build ortamı (yeni, eski ~/theia-app/ silinmiştir)
+├── capacitor.config.json ← server.url: http://100.115.79.121:8000
+├── www/ ← ~/theia-soul/static/* buraya kopyalanır
+└── android/
+└── app/src/main/
+├── AndroidManifest.xml ← cleartextTraffic + networkSecurityConfig eklenmiş
+└── res/xml/
+└── network_security_config.xml ← 100.115.79.121 için HTTP izni
 
-~/theia/                    ← Telegram botu (ayrı proje)
-~/TheiaMemory/              ← Obsidian vault
-└── System/                 ← Bridge'in okuma hedefi (15dk'da bir Soul DB'ye yazılır)
-```
+~/theia-electron/ ← Electron masaüstü uygulaması (ayrı dizin)
+├── main.js ← Electron ana prosesi (mikrofon izni, PipeWire, no-sandbox)
+└── package.json ← electron . --no-sandbox
+
+~/theia/ ← Telegram botu (ayrı proje)
+~/TheiaMemory/ ← Obsidian vault
+└── System/ ← Bridge'in okuma hedefi (15dk'da bir Soul DB'ye yazılır)
+text
+
+
+---
+
+## Wake Word Sistemi (Yeni)
+
+| Özellik | Değer |
+|---|---|
+| Wake Word | "Hey Theia" (küçük harf duyarsız) |
+| Geri Bildirim | "Kaptan Theia seni dinliyor" (Edge TTS ile sesli) |
+| Pasif Durum Göstergesi | Sol alt köşe yeşil yazı |
+| Aktif Durum Göstergesi | Sarı arka plan |
+| Otomatik Uyku | 30 saniye sessizlik sonrası pasife dönüş |
+| Uygulama | `static/index.html` içinde ayrı `<script>` bloğu |
+| WebSocket | `ws://localhost:8000/api/ws/stt` (pasif dinleme için ayrı bağlantı) |
 
 ---
 
@@ -123,8 +153,8 @@ Scout decay kuralları: 30 gün sessiz → `passive`, 90 gün sessiz → `archiv
 
 | Method | Path | Açıklama |
 |---|---|---|
-| GET | `/api/health` | Tüm modellerin sağlık durumu (claude/deepseek/kimi/ollama) |
-| POST | `/api/chat` | Senkron chat (model seçilebilir) |
+| GET | `/api/health` | Tüm modellerin sağlık durumu |
+| POST | `/api/chat` | Senkron chat |
 | POST | `/api/chat/stream` | SSE stream chat |
 | GET | `/api/sessions` | Oturum listesi |
 | GET | `/api/sessions/{id}/messages` | Oturum mesajları |
@@ -132,18 +162,19 @@ Scout decay kuralları: 30 gün sessiz → `passive`, 90 gün sessiz → `archiv
 | GET | `/api/memory` | Tüm global hafıza kayıtları |
 | PUT | `/api/memory/{key}` | Hafıza yaz/güncelle |
 | DELETE | `/api/memory/{key}` | Hafıza kaydı sil |
-| GET | `/api/scout/report` | Scout raporu (status filtreli) |
+| GET | `/api/scout/report` | Scout raporu |
 | GET | `/api/scout/summary` | Scout özet istatistik |
 | PATCH | `/api/scout/status/{key}` | Manuel status güncelle |
-| POST | `/api/soul/daily` | Günlük özet yaz (theia-brief) |
-| POST | `/api/speak` | Edge TTS — Türkçe/İngilizce ses üret (MP3 stream) |
+| POST | `/api/soul/daily` | Günlük özet yaz |
+| POST | `/api/speak` | Edge TTS — Türkçe/İngilizce ses (MP3 stream) |
 | GET | `/api/speak/voices` | Kullanılabilir sesler |
-| WS | `/api/ws/stt` | Vosk offline STT — binary PCM16/16kHz alır, JSON transcript döner |
+| WS | `/api/ws/stt` | Vosk offline STT (PCM16/16kHz binary → JSON transcript) |
 | GET | `/api/gorev` | Görev listesi |
 | POST | `/api/gorev` | Görev oluştur |
 | PATCH | `/api/gorev/{id}/done` | Görevi tamamla |
 | DELETE | `/api/gorev/{id}` | Görevi sil |
-| GET | `/api/persona/snapshot` | Persona analizi (window: all/7d/30d) |
+| GET | `/api/persona/snapshot` | Persona analizi |
+| POST | `/api/youtube/search` | 🆕 YouTube arama & tarayıcıda aç |
 | GET | `/persona` | Persona HTML sayfası |
 | GET | `/` | Soul HUD (index.html) |
 
@@ -160,125 +191,99 @@ Scout decay kuralları: 30 gün sessiz → `passive`, 90 gün sessiz → `archiv
 | `kimi` | moonshot-v1-8k | KIMI_API_KEY |
 | `ollama` | llama3 | — (yerel) |
 
-Varsayılan model: `claude` (`.env`'den `DEFAULT_MODEL` ile değiştirilebilir)
-
 ---
 
-## Sistem Promptu
+## APK Build Akışı (Güncel — 2026.05.16)
 
-`core/theia_soul.py` → `build_system()` fonksiyonu
-
-`_build_system()` (routes.py içinde) şöyle çalışır:
-1. `req.system` varsa onu kullan (override)
-2. Yoksa `db.list_memory()` → tüm hafıza kayıtlarını çek → `build_system(user_memory=...)` çağır
-
-`build_system()` parametreleri:
-- `web=True` → web arama suffix'i ekler
-- `vault_context` → vault içeriği
-- `web_context` → web arama sonucu
-- `user_memory` → DB'den gelen hafıza kayıtları
-
----
-
-## Obsidian Bridge
-
-**Script:** `~/theia-soul/obsidian_bridge.py`
-**Çalışma:** Cron ile 15 dakikada bir
-**Kaynak:** `~/TheiaMemory/System/*.md`
-**Hedef:** Soul API → `PUT /api/memory/{key}`
-**Scout:** Aynı script decay kontrolü de yapar (30/90 gün kuralı)
-
----
-
-## Modül Durumu (2026.05.16)
-
-| Modül | Durum | Not |
-|---|---|---|
-| CHAT | ✅ Aktif | Web'den çalışıyor |
-| VAULT | ✅ Aktif | |
-| PERSONA | ✅ Aktif | /api/persona/snapshot |
-| GATEKEEPER | ✅ Aktif | v2.3 |
-| SAĞLIK | ✅ Aktif | |
-| GÖREV | ✅ Aktif | soul.db bağlı |
-| TTS (ses çıkış) | ✅ Aktif | Edge TTS → /api/speak → MP3 → Audio element |
-| STT (ses giriş) | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt WebSocket |
-| ELECTRON | ✅ Aktif | ~/theia-electron/ · PipeWire mikrofon · no-sandbox |
-| GÖRÜNTÜ | ⏳ Planlandı | Screenshot → Claude analizi |
-| WHATSAPP | ⏳ Planlandı | Sesli komutla mesaj gönderme |
-| YOUTUBE | ⏳ Planlandı | Kanal istatistikleri + şarkı açma |
-| TAKVİM | ⏳ Planlandı | Google Calendar entegrasyonu |
-| APK (Android) | ⚠️ Sorunlu | Failed to fetch — APK'daki IP/adres yanlış |
-
----
-
-## APK Build Akışı
-
+### ⚠️ Kritik: SOUL_API Sabiti Güncelleme
+APK build etmeden önce `static/` içindeki JS dosyalarında `SOUL_API` sabitinin
+doğru IP'yi gösterdiğinden emin olun. Şu komutla kontrol edin:
 ```bash
-export ANDROID_HOME=~/Android/Sdk
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-export PATH=$JAVA_HOME/bin:$PATH
+grep -rn "SOUL_API\|soul_api\|localhost:8000\|127.0.0.1" ~/theia-soul/static/ | grep -v ".bak"
 
-cp ~/theia-soul/static/index.html ~/theia-app/www/index.html
-cd ~/theia-app && npx cap sync android
+Eğer localhost veya yanlış IP görürseniz, 100.115.79.121:8000 ile değiştirin.
+Build Adımları
+bash
+
+# 1. Mobil dizine geç
+cd ~/theia-mobile
+
+# 2. www klasörünü temizle ve statik dosyaları kopyala
+rm -rf www/*
+cp -r ~/theia-soul/static/* www/
+
+# 3. Android'i senkronize et
+npx cap sync android
+
+# 4. APK'yı build et
 cd android && ./gradlew assembleDebug --no-daemon
-cp ~/theia-app/android/app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-portal.apk
-```
 
-**Not:** Debug build. Release için keystore gerekir. APK'daki `SOUL_API` sabiti ve
-`capacitor.config.ts`'deki `allowNavigation` IP'si güncellenmeli.
+# 5. Masaüstüne kopyala
+cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 
----
+APK Yapılandırma Dosyaları (zaten oluşturuldu, tekrar gerekmez)
 
-## STT (Vosk WebSocket)
+    capacitor.config.json: server.url: "http://100.115.79.121:8000"
 
-**Nasıl çalışır:**
-1. Tarayıcı `getUserMedia` ile mikrofon açar
-2. `AudioContext(sampleRate:16000)` + `ScriptProcessor(4096)` ile PCM16 üretir
-3. `ws://localhost:8000/api/ws/stt` WebSocket'e binary chunk gönderir
-4. `KaldiRecognizer(model, 16000)` her chunk'ı işler
-5. Partial → `{"text":"...", "final":false}` · Final → `{"text":"...", "final":true}`
-6. `micTx` elementi güncellenir; `stopListening()` çağrısında transcript `sendMsg()` ile gönderilir
+    AndroidManifest.xml: usesCleartextTraffic="true" + networkSecurityConfig
 
-**Model:** `vosk-models/vosk-model-small-tr-0.3/` (36MB, git'e girmiyor)
-**İndirme:** `wget https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip`
+    network_security_config.xml: 100.115.79.121 domain için HTTP izni
 
-## TTS (Edge TTS)
+Telefon Gereksinimleri
 
-**Nasıl çalışır:**
-1. `speakText(text)` → `fetch('/api/speak', {text, voice:'tr', rate})`
-2. Soul API → `edge_tts.Communicate` → MP3 stream
-3. `new Audio(blobURL).play()` → hoparlörden ses
+    Tailscale açık ve theia-core cihazına bağlı olmalı
 
-Rate dönüşümü: slider (0.5–2.0) → `+X%` format (örn. 1.5 → "+50%")
+    "Bilinmeyen kaynaklardan yükleme" izni açık olmalı
 
-## Electron Masaüstü Uygulaması
+Modül Durumu (2026.05.16)
+Modül	Durum	Not
+CHAT	✅ Aktif	Web'den çalışıyor
+VAULT	✅ Aktif	
+PERSONA	✅ Aktif	/api/persona/snapshot
+GATEKEEPER	✅ Aktif	v2.3
+SAĞLIK	✅ Aktif	
+GÖREV	✅ Aktif	soul.db bağlı
+TTS (ses çıkış)	✅ Aktif	Edge TTS → /api/speak
+STT (ses giriş)	✅ Aktif	Vosk offline Türkçe → /api/ws/stt
+WAKE WORD	✅ Aktif	"Hey Theia" → pasif dinleme → otomatik komut modu
+ELECTRON	✅ Aktif	systemd --user ile otomatik başlatma
+YOUTUBE	✅ Aktif	/api/youtube/search endpoint'i eklendi
+APK (Android)	⚠️ Hata	"Soul API erişilemiyor" — SOUL_API sabiti kontrol edilecek
+WHATSAPP	⏳ Planlandı	Sesli komutla mesaj gönderme
+HAVA DURUMU	⏳ Planlandı	Açılış konuşması
+GÖRÜNTÜ	⏳ Planlandı	Screenshot → Claude analizi
+TAKVİM	⏳ Planlandı	Google Calendar entegrasyonu
+TEAM	⏳ Rafta	Başka bir uygulamaya kayabilir
+Geliştirme Notları
 
-**Konum:** `~/theia-electron/`
-**Başlatma:** `cd ~/theia-electron && npm start`
+    ANA KAYNAK: ~/theia-soul/static/index.html — her zaman buraya yaz
 
-Kritik Electron flagleri (`main.js`):
-- `WebRTCPipeWireCapturer` — Debian PipeWire mikrofon desteği
-- `use-fake-ui-for-media-stream` — otomatik mikrofon izni
-- `autoplay-policy=no-user-gesture-required` — TTS autoplay
-- `no-sandbox` — GPU sandbox /dev/shm sorunu önleme
-- `setPermissionRequestHandler` + `setPermissionCheckHandler` → callback(true)
+    GitHub'a manuel commit atılıyor (~/theia-soul/ → git push)
 
-## Geliştirme Notları
+    .env dosyası git'e girmiyor (API anahtarları)
 
-- **ANA KAYNAK:** `~/theia-soul/static/index.html` — her zaman buraya yaz
-- GitHub'a manuel commit atılıyor (`~/theia-soul/` → `git push`)
-- `.env` dosyası git'e girmiyor (API anahtarları)
-- `bridge.log`, `nohup.out`, `vosk-models/` gitignore'da
-- Soul API reload modunda çalışıyor (kod değişince otomatik restart)
-- Servis restart: `sudo systemctl restart theia-soul`
-- Bot restart: `sudo systemctl restart theia`
+    bridge.log, nohup.out, vosk-models/ gitignore'da
 
-## graphify
+    Soul API reload modunda çalışıyor (kod değişince otomatik restart)
+
+    Servis restart: sudo systemctl restart theia-soul
+
+    Bot restart: sudo systemctl restart theia
+
+    Electron restart: systemctl --user restart theia-electron
+
+    APK build dizini: ~/theia-mobile/ (eski ~/theia-app/ geçersizdir)
+
+graphify
 
 This project has a graphify knowledge graph at graphify-out/.
 
 Rules:
-- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+
+    Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md
+
+    If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+
+    For cross-module questions, prefer graphify query "<question>", graphify path "<A>" "<B>", or graphify explain "<concept>"
+
+    After modifying code files in this session, run graphify update . to keep the graph current
