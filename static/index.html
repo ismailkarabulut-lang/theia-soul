@@ -870,6 +870,8 @@ let sesId = 'SES_' + Math.random().toString(36).slice(2,6).toUpperCase();
 let curModel = 'claude', curColor = '#7C6EF5';
 let isThinking = false, isChatOpen = false, isListening = false;
 let recognition = null, micAF = null;
+let listenStartTime = 0;
+const MIN_LISTEN_MS = 5000;
 let _voskWs = null, _voskAudio = {ctx:null,source:null,processor:null,stream:null}, _voskAccum = '';
 let msgStore = [];
 let sessions = JSON.parse(localStorage.getItem('theia_v2_sessions') || '[]');
@@ -1415,7 +1417,7 @@ async function startListening() {
   }
 }
 
-function stopListening() {
+function stopListening(manualStop = false) {
   isListening = false;
   if (window._sttKeepAlive) { clearInterval(window._sttKeepAlive); window._sttKeepAlive = null; }
   const capSR = getCapSpeech();
@@ -1447,6 +1449,10 @@ function stopListening() {
   document.getElementById('sesPttBtn')?.classList.remove('active');
   document.getElementById('micWaveSvg')?.style.setProperty('opacity','0');
   if (micAF) cancelAnimationFrame(micAF);
+  // Manuel durdurma sonrası pasif dinlemeyi yeniden başlat
+  if (manualStop && typeof startPassiveListening === 'function') {
+    setTimeout(startPassiveListening, 500);
+  }
 }
 function micWave() {
   const path=document.getElementById('micWave'); const t0=Date.now();
@@ -1466,11 +1472,20 @@ function initTTS() {
   const pttBtn = document.getElementById('sesPttBtn');
   pttBtn.addEventListener('click', () => {
     if (isListening) {
-      stopListening();
+      const elapsed = Date.now() - listenStartTime;
+      if (elapsed < MIN_LISTEN_MS) {
+        const left = Math.ceil((MIN_LISTEN_MS - elapsed) / 1000);
+        toast(`${left} saniye daha bekle`, '#EF9F27');
+        return;
+      }
+      stopListening(true);
     } else {
+      // Wake engine durdur, mikrofonu serbest bırak
+      _stopWakeEngine();
       const micTxEl = document.getElementById('micTx');
       micTxEl.textContent = '';
       micTxEl.dataset.accumulated = '';
+      listenStartTime = Date.now();
       startListening();
     }
   });
@@ -1598,7 +1613,17 @@ function initEvents() {
   document.getElementById('sesClose').addEventListener('click', closeSes);
   document.getElementById('gkBtn').addEventListener('click',()=>document.getElementById('gkDrawer').classList.contains('open')?closeGk():openGk());
   document.getElementById('gkClose').addEventListener('click', closeGk);
-  document.getElementById('micBtn').addEventListener('click',()=>isListening?stopListening():startListening());
+  document.getElementById('micBtn').addEventListener('click',()=>{
+    if(isListening){
+      const elapsed=Date.now()-listenStartTime;
+      if(elapsed<MIN_LISTEN_MS){toast(Math.ceil((MIN_LISTEN_MS-elapsed)/1000)+' saniye daha bekle','#EF9F27');return;}
+      stopListening(true);
+    } else {
+      _stopWakeEngine();
+      listenStartTime=Date.now();
+      startListening();
+    }
+  });
   const micStopEl = document.getElementById('micStop');
   if (micStopEl) micStopEl.addEventListener('click', () => {
     if (isSesOverlayOpen) { closeSesOverlay(); } else { stopListening(); }
@@ -1638,12 +1663,762 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- Modüller ana script'ten sonra, DOMContentLoaded'dan önce yüklenir -->
-<script src="modules/vault.js"></script>
-<script src="modules/persona.js"></script>
-<script src="modules/saglik.js"></script>
-<script src="modules/team.js"></script>
-<script src="modules/gorev.js"></script>
+<!-- Modüller inline (team ayrı uygulama olarak planlandı) -->
+<script>
+/* ════════════════════════════════════════
+   VAULT · HAFİZA
+   ════════════════════════════════════════ */
+let isVaultOpen = false;
+
+function vMdLite(raw) {
+  return raw
+    .replace(/^## (.+)$/gm, '<span class="md-h2">## $1</span>')
+    .replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>')
+    .replace(/^- (.+)$/gm, '<span class="md-li">· $1</span>');
+}
+
+function vFmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('tr-TR', {day:'2-digit',month:'short',year:'numeric'})
+       + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+}
+
+function vTypeBadge(entry_type) {
+  if (entry_type === 'core') return 'core';
+  if (entry_type === 'daily_summary') return 'daily';
+  return 'memory';
+}
+
+function vTypeLabel(entry_type) {
+  if (entry_type === 'core') return 'CORE';
+  if (entry_type === 'daily_summary') return 'DAILY';
+  return 'MEMORY';
+}
+
+function renderVaultList(entries) {
+  const list = document.getElementById('vaultList');
+  list.innerHTML = '';
+  if (!entries || !entries.length) {
+    list.innerHTML = '<div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);padding:20px;text-align:center;">kayıt yok</div>';
+    return;
+  }
+  entries.forEach((entry, i) => {
+    const card = document.createElement('div');
+    card.className = 'v-card';
+    const badge = vTypeBadge(entry.entry_type);
+    const label = vTypeLabel(entry.entry_type);
+    card.innerHTML = `
+      <div class="v-card-hd">
+        <span class="v-type ${badge}">${label}</span>
+        <span class="v-key">${entry.key}</span>
+        <span class="v-date">${vFmtDate(entry.updated_at)}</span>
+        <span class="v-chevron">▼</span>
+      </div>
+      <div class="v-card-body">
+        <div class="v-content">${vMdLite(entry.value||'')}</div>
+      </div>`;
+    card.querySelector('.v-card-hd').addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+    if (entry.entry_type === 'core') card.classList.add('expanded');
+    list.appendChild(card);
+  });
+}
+
+function renderScout(summary) {
+  const by = summary.by_status || {};
+  document.getElementById('sc-active').textContent   = by.active   || 0;
+  document.getElementById('sc-passive').textContent  = by.passive  || 0;
+  document.getElementById('sc-archived').textContent = by.archived || 0;
+  document.getElementById('vaultBadge').textContent  = `SCOUT · ${summary.total || 0} KAYIT`;
+  document.getElementById('scoutMeta').innerHTML =
+    `<strong>toplam:</strong> ${summary.total || 0}<br>` +
+    `<strong>son güncelleme:</strong><br>${vFmtDate(summary.last_update)}`;
+}
+
+async function fetchVault() {
+  try {
+    const [memResp, scoutResp] = await Promise.all([
+      fetch(`${SOUL_API}/api/memory`, {signal: AbortSignal.timeout(6000)}),
+      fetch(`${SOUL_API}/api/scout/summary`, {signal: AbortSignal.timeout(6000)})
+    ]);
+    const entries = memResp.ok  ? await memResp.json()  : [];
+    const scout   = scoutResp.ok? await scoutResp.json(): {total:0,by_status:{}};
+    return {entries, scout};
+  } catch(e) {
+    return {entries:[], scout:{total:0,by_status:{},last_update:null}};
+  }
+}
+
+function openVault() {
+  window.warpOpen(async () => {
+    document.getElementById('vaultOverlay').classList.add('open');
+    isVaultOpen = true;
+    const {entries, scout} = await fetchVault();
+    document.getElementById('vaultMeta').textContent =
+      `${entries.length} kayıt · /api/memory + /api/scout/summary`;
+    renderVaultList(entries);
+    renderScout(scout);
+  });
+}
+
+function closeVault() {
+  window.warpClose(() => {
+    document.getElementById('vaultOverlay').classList.remove('open');
+    isVaultOpen = false;
+  });
+}
+
+function initVault() {
+  document.getElementById('vaultBackBtn').addEventListener('click', closeVault);
+}
+
+// === Export to window for cross-module access ===
+window.isVaultOpen = false;
+window.closeVault = closeVault;
+
+const _origOpenVault = openVault;
+openVault = function() { _origOpenVault(); window.isVaultOpen = isVaultOpen; };
+const _origCloseVault = closeVault;
+closeVault = function() { _origCloseVault(); window.isVaultOpen = isVaultOpen; };
+window.closeVault = closeVault;
+window.initVault = initVault;
+
+</script>
+<script>
+/* ════════════════════════════════════════
+   PERSONA ENGINE
+   ════════════════════════════════════════ */
+let isPersonaOpen = false;
+let pWindow = 'all';
+const PDEMO = {
+  window:'all', total_messages:198, sessions:21, avg_messages_per_session:9.4,
+  longest_session:76, peak_hour:2, peak_day:'Per',
+  input_tokens:387000, output_tokens:11900,
+  top_trigrams:[
+    {ngram:'yapay zekanın hafıza kazanma',count:2,pct:89},
+    {ngram:'sistem prompt inşa edilir',count:8,pct:76},
+    {ngram:'soul agent cache aktif',count:6,pct:62},
+    {ngram:'gatekeeper risk sınıflandır',count:5,pct:51},
+  ],
+  leitmotif:'yapay zekanın hafıza <em>kazanma hikayesi</em>',
+  heatmap: (()=>{
+    const hm={};
+    for(let h=0;h<24;h++){hm[h]={};for(let d=0;d<7;d++){
+      let v=Math.random()*.2;
+      if(h>=0&&h<=4&&d>=3&&d<=5) v=.55+Math.random()*.45;
+      else if(h>=22||h<=2) v=.25+Math.random()*.45;
+      else if(h>=10&&h<=14&&d>=1&&d<=5) v=.2+Math.random()*.3;
+      hm[h][d]=v;
+    }}return hm;
+  })()
+};
+
+function fmtK(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return String(n);}
+
+function pCountUp(el,target,dur,isFloat){
+  const s=performance.now();
+  const u=now=>{
+    const p=Math.min((now-s)/dur,1),e=1-Math.pow(1-p,3);
+    el.textContent=isFloat?(target*e).toFixed(1):Math.round(target*e);
+    if(p<1)requestAnimationFrame(u);else el.textContent=isFloat?target.toFixed(1):target;
+  };requestAnimationFrame(u);
+}
+
+function buildPHeatmap(){
+  const labels=document.getElementById('pHmLabels');
+  const days=document.getElementById('pHmDays');
+  const grid=document.getElementById('pHmGrid');
+  labels.innerHTML='';days.innerHTML='';grid.innerHTML='';
+  ['00','','','04','','','','08','','','','12','','','','16','','','','20','','','',''].forEach(t=>{
+    const d=document.createElement('div');d.className='p-hm-lbl';d.textContent=t;labels.appendChild(d);
+  });
+  ['PZT','SAL','ÇRŞ','PRS','CUM','CMT','PAZ'].forEach(t=>{
+    const d=document.createElement('div');d.className='p-hm-dlbl';d.textContent=t;days.appendChild(d);
+  });
+  window._pCells=[];
+  for(let h=0;h<24;h++)for(let d=0;d<7;d++){
+    const c=document.createElement('div');c.className='p-hm-cell';
+    c.title=`${String(h).padStart(2,'0')}:00 · ${['Pzt','Sal','Çrş','Prş','Cum','Cmt','Paz'][d]}`;
+    grid.appendChild(c);window._pCells.push({c,h,d});
+  }
+}
+
+function fillPHeatmap(hmRaw){
+  if(!window._pCells||!hmRaw)return;
+  let max=0;
+  for(let d=0;d<7;d++)for(let h=0;h<24;h++){const v=hmRaw[d]?.[h]||0;if(v>max)max=v;}
+  if(!max)max=1;
+  window._pCells.forEach(({c,h,d},i)=>{
+    const v=(hmRaw[d]?.[h]||0)/max;
+    c.style.background=`rgba(45,212,191,${(.03+v*.82).toFixed(3)})`;
+    if(v>.7)c.style.boxShadow=`0 0 4px rgba(45,212,191,${(v*.5).toFixed(2)})`;
+    setTimeout(()=>c.style.opacity='1',i*1.2);
+  });
+}
+
+function renderPersonaData(data){
+  const d=data||PDEMO;
+
+  const start=d.date_range?.start?new Date(d.date_range.start).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}):'—';
+  const end=d.date_range?.end?new Date(d.date_range.end).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}):'—';
+  document.getElementById('personaMeta').textContent=`v1.0 · ${d.total_messages||0} mesaj · ${start}–${end} · read-only`;
+
+  const dayNames=['Paz','Pzt','Sal','Çrş','Per','Cum','Cmt'];
+  const peakH=d.time_pattern?.peak_hour??d.peak_hour??2;
+  const peakDi=d.time_pattern?.peak_weekday??3;
+  document.getElementById('ps-peak').textContent=`${dayNames[peakDi]} ${String(peakH).padStart(2,'0')}:00`;
+  pCountUp(document.getElementById('ps-ses'), d.session_pattern?.total_sessions||d.sessions||27, 900, false);
+  pCountUp(document.getElementById('ps-avg'), d.session_pattern?.avg_messages_per_session||d.avg_messages_per_session||9.1, 1000, true);
+  pCountUp(document.getElementById('ps-long'), d.session_pattern?.longest_session||d.longest_session||76, 1100, false);
+
+  const inp=d.token_usage?.total_input_tokens||d.input_tokens||559219;
+  const out=d.token_usage?.total_output_tokens||d.output_tokens||16798;
+  const inpEl=document.getElementById('ps-inp'),outEl=document.getElementById('ps-out');
+  const s0=performance.now();
+  const uInp=n=>{const p=Math.min((n-s0)/1400,1),e=1-Math.pow(1-p,3);inpEl.textContent=fmtK(Math.round(inp*e));if(p<1)requestAnimationFrame(uInp);else inpEl.textContent=fmtK(inp);};requestAnimationFrame(uInp);
+  const s1=performance.now();
+  const uOut=n=>{const p=Math.min((n-s1)/1400,1),e=1-Math.pow(1-p,3);outEl.textContent=fmtK(Math.round(out*e));if(p<1)requestAnimationFrame(uOut);else outEl.textContent=fmtK(out);};requestAnimationFrame(uOut);
+  setTimeout(()=>{
+    document.getElementById('ps-inp-bar').style.width='97%';
+    const outPct=Math.max((out/inp)*100*6, 3);
+    document.getElementById('ps-out-bar').style.width=Math.min(outPct,90)+'%';
+  },350);
+  document.getElementById('ps-ratio').innerHTML=
+    `<strong style="color:var(--teal)">${(inp/out).toFixed(1)}×</strong> input/output · avg output/msg: <strong style="color:var(--purple)">${d.token_usage?.avg_output_per_msg||136.6}</strong> token`;
+
+  const tgEl=document.getElementById('pTgRows');tgEl.innerHTML='';
+  const trigrams=d.frequency?.top_trigrams||d.top_trigrams||PDEMO.top_trigrams;
+  const maxCount=trigrams[0]?.count||1;
+  trigrams.slice(0,5).forEach((tg,i)=>{
+    const pct=Math.round((tg.count/maxCount)*100);
+    const label=tg.term||tg.ngram||'—';
+    const row=document.createElement('div');row.className='p-tg-row';
+    row.innerHTML=`<div class="p-tg-hd"><span class="p-tg-word">${label}</span><span class="p-tg-pct" id="ptgp${i}">0%</span></div><div class="p-tg-track"><div class="p-tg-fill" id="ptgf${i}"></div></div>`;
+    tgEl.appendChild(row);
+    setTimeout(()=>{
+      document.getElementById(`ptgf${i}`).style.width=pct+'%';
+      let c=0;const iv=setInterval(()=>{c=Math.min(c+3,pct);document.getElementById(`ptgp${i}`).textContent=c+'%';if(c>=pct)clearInterval(iv);},16);
+    },380+i*80);
+  });
+
+  const lm=trigrams[0]?.term||trigrams[0]?.ngram||'—';
+  document.getElementById('ps-lm').innerHTML=`"${lm}"`;
+
+  fillPHeatmap(d.time_pattern?.heatmap||PDEMO.heatmap);
+}
+
+async function fetchPersona(win){
+  try{
+    const r=await fetch(`${SOUL_API}/api/persona/snapshot?window=${win}`,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){ return PDEMO; }
+}
+
+function openPersona(){
+  buildPHeatmap();
+  window.warpOpen(async()=>{
+    document.getElementById('personaOverlay').classList.add('open');
+    isPersonaOpen=true;
+    const data=await fetchPersona(pWindow);
+    renderPersonaData(data);
+  });
+}
+function closePersona(){
+  window.warpClose(()=>{document.getElementById('personaOverlay').classList.remove('open');isPersonaOpen=false;});
+}
+
+function initPersona(){
+  document.getElementById('personaBackBtn').addEventListener('click',closePersona);
+  document.querySelectorAll('.p-win-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      if(btn.dataset.pw===pWindow)return;
+      document.querySelectorAll('.p-win-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); pWindow=btn.dataset.pw;
+      const data=await fetchPersona(pWindow);
+      renderPersonaData(data);
+    });
+  });
+}
+
+// === Export to window for cross-module access ===
+window.isPersonaOpen = false;
+window.closePersona = closePersona;
+
+const _origOpenPersona = openPersona;
+openPersona = function() { _origOpenPersona(); window.isPersonaOpen = isPersonaOpen; };
+const _origClosePersona = closePersona;
+closePersona = function() { _origClosePersona(); window.isPersonaOpen = isPersonaOpen; };
+window.closePersona = closePersona;
+window.initPersona = initPersona;
+
+</script>
+<script>
+/* ════════════════════════════════════════
+   SAĞLIK ENGINE
+   ════════════════════════════════════════ */
+let isSaglikOpen = false;
+
+const sgHistory = {};
+
+const SG_SERVICES_DEFAULT = [
+  { id:'soul',     name:'Soul API',      desc:'ana agent · chat · memory',  endpoint:'/api/health' },
+  { id:'claude',   name:'Claude API',    desc:'LLM · Anthropic',            endpoint:null },
+  { id:'deepseek', name:'DeepSeek API',  desc:'LLM · deepseek-chat',        endpoint:null },
+  { id:'memory',   name:'Memory · FTS',  desc:'hafıza · full-text search',  endpoint:'/api/memory' },
+  { id:'scout',    name:'Scout · Decay', desc:'decay engine · summary',     endpoint:'/api/scout/summary' },
+  { id:'persona',  name:'Persona',       desc:'snapshot · analytics',       endpoint:'/api/persona/snapshot?window=all' },
+];
+
+function sgStatusClass(status) {
+  if (status === 'ok')   return 'ok';
+  if (status === 'warn') return 'warn';
+  if (status === 'err')  return 'err';
+  return 'chk';
+}
+function sgStatusLabel(status) {
+  if (status === 'ok')   return 'ONLINE';
+  if (status === 'warn') return 'DEGRADED';
+  if (status === 'err')  return 'OFFLINE';
+  return 'KONTROL...';
+}
+function sgLatencyColor(ms) {
+  if (ms === null) return 'chk';
+  if (ms < 300)  return 'ok';
+  if (ms < 1000) return 'warn';
+  return 'err';
+}
+
+async function fetchSaglik() {
+  const results = [];
+
+  let healthData = null;
+  try {
+    const t0 = Date.now();
+    const r = await fetch(`${SOUL_API}/api/health`, { signal: AbortSignal.timeout(5000) });
+    const ms = Date.now() - t0;
+    if (r.ok) {
+      healthData = await r.json();
+      healthData._latency = ms;
+    }
+  } catch(e) { /* timeout veya bağlantı yok */ }
+
+  const services = (healthData && Array.isArray(healthData.services))
+    ? healthData.services
+    : null;
+
+  if (services) {
+    services.forEach(svc => {
+      results.push({
+        id:      svc.id || svc.name,
+        name:    svc.name,
+        desc:    svc.description || svc.desc || '',
+        status:  svc.status === 'healthy' ? 'ok' : svc.status === 'degraded' ? 'warn' : 'err',
+        latency: svc.latency_ms ?? svc.latency ?? null,
+      });
+    });
+    const soulEntry = results.find(r => r.id === 'soul' || r.name?.toLowerCase().includes('soul'));
+    if (soulEntry) soulEntry.latency = healthData._latency;
+  } else {
+    await Promise.all(SG_SERVICES_DEFAULT.map(async svc => {
+      if (!svc.endpoint) {
+        results.push({ id:svc.id, name:svc.name, desc:svc.desc, status:'chk', latency:null });
+        return;
+      }
+      try {
+        const t0 = Date.now();
+        const r = await fetch(`${SOUL_API}${svc.endpoint}`, { signal: AbortSignal.timeout(4000) });
+        const ms = Date.now() - t0;
+        results.push({
+          id: svc.id, name: svc.name, desc: svc.desc,
+          status:  r.ok ? (ms > 1000 ? 'warn' : 'ok') : 'err',
+          latency: ms,
+        });
+      } catch(e) {
+        results.push({ id:svc.id, name:svc.name, desc:svc.desc, status:'err', latency:null });
+      }
+    }));
+    results.sort((a,b) => {
+      const ai = SG_SERVICES_DEFAULT.findIndex(s=>s.id===a.id);
+      const bi = SG_SERVICES_DEFAULT.findIndex(s=>s.id===b.id);
+      return ai - bi;
+    });
+  }
+
+  return { results, ts: Date.now() };
+}
+
+function renderSgServices(results) {
+  const list = document.getElementById('sgServiceList');
+  list.innerHTML = '';
+  results.forEach(svc => {
+    const st = sgStatusClass(svc.status);
+    const lc = sgLatencyColor(svc.latency);
+    const latTxt = svc.latency !== null ? `${svc.latency}ms` : '—';
+    const card = document.createElement('div');
+    card.className = `sg-svc-card ${st}`;
+    card.innerHTML = `
+      <div class="sg-svc-dot ${st}"></div>
+      <div>
+        <div class="sg-svc-name">${esc(svc.name)}</div>
+        <div class="sg-svc-desc">${esc(svc.desc)}</div>
+      </div>
+      <div class="sg-svc-latency ${lc}">${latTxt}</div>
+      <div class="sg-svc-badge ${st}">${sgStatusLabel(svc.status)}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function renderSgStats(results) {
+  const total = results.length;
+  const ok   = results.filter(r=>r.status==='ok').length;
+  const warn = results.filter(r=>r.status==='warn').length;
+  const err  = results.filter(r=>r.status==='err').length;
+
+  document.getElementById('sg-total').textContent = total;
+  document.getElementById('sg-ok').textContent    = ok;
+  document.getElementById('sg-warn').textContent  = warn;
+  document.getElementById('sg-err').textContent   = err;
+
+  document.getElementById('sg-warn').closest('.sg-stat').style.setProperty('--sc', warn > 0 ? 'var(--orange)' : 'var(--dim)');
+  document.getElementById('sg-err').closest('.sg-stat').style.setProperty('--sc',  err  > 0 ? 'var(--red)'    : 'var(--dim)');
+
+  const badge = document.getElementById('saglikBadge');
+  if (err > 0) {
+    badge.textContent = `● ${err} HATA`; badge.style.color='var(--red)'; badge.style.borderColor='rgba(232,93,36,0.35)';
+  } else if (warn > 0) {
+    badge.textContent = `● ${warn} UYARI`; badge.style.color='var(--orange)'; badge.style.borderColor='rgba(239,159,39,0.35)';
+  } else {
+    badge.textContent = `● TÜM SİSTEMLER NORMAL`; badge.style.color='var(--green)'; badge.style.borderColor='rgba(29,158,117,0.35)';
+  }
+}
+
+function renderSgSpark(results) {
+  results.forEach(svc => {
+    if (!sgHistory[svc.id]) sgHistory[svc.id] = [];
+    sgHistory[svc.id].push(svc.latency);
+    if (sgHistory[svc.id].length > 10) sgHistory[svc.id].shift();
+  });
+
+  const wrap = document.getElementById('sgSparkWrap');
+  wrap.innerHTML = '';
+
+  const measurable = results.filter(r => r.latency !== null || (sgHistory[r.id] && sgHistory[r.id].some(v=>v!==null)));
+  if (!measurable.length) {
+    wrap.innerHTML = '<div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);text-align:center;padding:10px;">ölçüm yok</div>';
+    return;
+  }
+
+  measurable.forEach(svc => {
+    const hist = (sgHistory[svc.id] || []).filter(v => v !== null);
+    if (!hist.length) return;
+    const maxV = Math.max(...hist, 1);
+    const lc = sgLatencyColor(svc.latency);
+    const colMap = { ok:'var(--green)', warn:'var(--orange)', err:'var(--red)', chk:'var(--dim)' };
+    const col = colMap[lc] || 'var(--dim)';
+
+    const row = document.createElement('div');
+    row.className = 'sg-spark-row';
+    const bars = hist.map(v => {
+      const h = Math.max(Math.round((v/maxV)*32), 3);
+      const bc = colMap[sgLatencyColor(v)];
+      return `<div class="sg-spark-bar" style="height:${h}px;background:${bc};opacity:0.75;"></div>`;
+    }).join('');
+    row.innerHTML = `
+      <div class="sg-spark-lbl">${esc(svc.name)}</div>
+      <div class="sg-spark-bars">${bars}</div>
+      <div class="sg-spark-val" style="color:${col};">${svc.latency ?? '—'}ms</div>`;
+    wrap.appendChild(row);
+  });
+}
+
+async function loadSaglik() {
+  const refBtn = document.getElementById('saglikRefresh');
+  const meta   = document.getElementById('saglikMeta');
+  refBtn.classList.add('spinning');
+  meta.textContent = 'kontrol ediliyor...';
+  document.getElementById('saglikBadge').textContent = '● KONTROL...';
+
+  const { results, ts } = await fetchSaglik();
+
+  renderSgStats(results);
+  renderSgServices(results);
+  renderSgSpark(results);
+
+  const t = new Date(ts);
+  meta.textContent = `son güncelleme: ${t.toLocaleTimeString('tr-TR')} · ${results.length} servis`;
+  refBtn.classList.remove('spinning');
+  gkLog('LOW', `Sağlık: ${results.filter(r=>r.status==='ok').length}/${results.length} ok`);
+}
+
+function openSaglik() {
+  window.warpOpen(() => {
+    document.getElementById('saglikOverlay').classList.add('open');
+    isSaglikOpen = true;
+    loadSaglik();
+  });
+}
+
+function closeSaglik() {
+  window.warpClose(() => {
+    document.getElementById('saglikOverlay').classList.remove('open');
+    isSaglikOpen = false;
+  });
+}
+
+function initSaglik() {
+  document.getElementById('saglikBackBtn').addEventListener('click', closeSaglik);
+  document.getElementById('saglikRefresh').addEventListener('click', loadSaglik);
+}
+
+// === Export to window for cross-module access ===
+window.isSaglikOpen = false;
+window.closeSaglik = closeSaglik;
+
+const _origOpenSaglik = openSaglik;
+openSaglik = function() { _origOpenSaglik(); window.isSaglikOpen = isSaglikOpen; };
+const _origCloseSaglik = closeSaglik;
+closeSaglik = function() { _origCloseSaglik(); window.isSaglikOpen = isSaglikOpen; };
+window.closeSaglik = closeSaglik;
+window.initSaglik = initSaglik;
+
+</script>
+<script>
+/* ══ GÖREV MOD ══ */
+(function(){
+const s=document.createElement('style');
+s.textContent=`
+.gorev-overlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:rgba(3,2,10,0.97);opacity:0;pointer-events:none;transition:opacity 0.4s ease;}
+.gorev-overlay.open{opacity:1;pointer-events:all;}
+.gtab-bar{display:flex;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.3);flex-shrink:0;}
+.gtab{flex:1;padding:11px 0;text-align:center;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.18em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.gtab.active{color:var(--purple);border-bottom-color:var(--purple);}
+.gtab-body{flex:1;overflow-y:auto;display:none;flex-direction:column;}
+.gtab-body.active{display:flex;}
+.gtab-body::-webkit-scrollbar{width:2px;}
+.g-section-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--dim);padding:12px 20px 6px;text-transform:uppercase;flex-shrink:0;}
+.g-card{display:flex;align-items:flex-start;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;flex-shrink:0;}
+.g-card:hover{background:rgba(124,110,245,0.04);}
+.g-check{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(124,110,245,0.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;cursor:pointer;}
+.g-check:hover{border-color:var(--purple);background:rgba(124,110,245,0.1);}
+.g-check.done{border-color:var(--green);background:rgba(29,158,117,0.12);}
+.g-check.done::after{content:'✓';font-size:11px;color:var(--green);}
+.g-info{flex:1;min-width:0;}
+.g-title{font-size:15px;color:var(--text);font-family:'Rajdhani',sans-serif;font-weight:500;}
+.g-title.done{text-decoration:line-through;color:var(--muted);}
+.g-meta{display:flex;align-items:center;gap:7px;margin-top:5px;flex-wrap:wrap;}
+.g-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+.g-badge{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.06em;padding:2px 8px;border-radius:20px;}
+.gb-rutin{border:1px solid rgba(124,110,245,0.3);color:var(--purple);background:rgba(124,110,245,0.07);}
+.gb-gorev{border:1px solid rgba(29,158,117,0.3);color:var(--green);background:rgba(29,158,117,0.07);}
+.gb-saglik{border:1px solid rgba(232,93,36,0.3);color:var(--red);background:rgba(232,93,36,0.07);}
+.gb-kisisel{border:1px solid rgba(79,168,213,0.3);color:var(--blue);background:rgba(79,168,213,0.07);}
+.gb-is{border:1px solid rgba(239,159,39,0.3);color:var(--orange);background:rgba(239,159,39,0.07);}
+.gcal-grid{padding:14px 16px 6px;flex-shrink:0;}
+.gcal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.gcal-lbl{text-align:center;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);padding:3px 0;}
+.gcal-cell{text-align:center;padding:7px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);border-radius:7px;cursor:pointer;position:relative;transition:background 0.15s;}
+.gcal-cell:hover{background:rgba(124,110,245,0.08);}
+.gcal-cell.today{background:rgba(124,110,245,0.18);color:var(--purple);font-weight:700;}
+.gcal-cell.has-task::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--green);}
+.gcal-events{flex:1;overflow-y:auto;border-top:1px solid var(--border);padding:10px 20px;}
+.gcal-ev{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.gcal-ev:last-child{border-bottom:none;}
+.gcal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.gd-purple{background:var(--purple);}.gd-green{background:var(--green);}.gd-orange{background:var(--orange);}
+.gcal-ev-title{flex:1;font-size:14px;color:var(--text);font-family:'Rajdhani',sans-serif;}
+.gcal-ev-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);white-space:nowrap;}
+.g-fab{padding:14px 20px;flex-shrink:0;display:flex;justify-content:flex-end;}
+.g-fab-btn{display:flex;align-items:center;gap:8px;padding:11px 22px;background:var(--purple);border:none;border-radius:24px;color:#fff;font-family:'Orbitron',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:.16em;cursor:pointer;transition:all 0.2s;}
+.g-fab-btn:hover{background:#6b5ce7;box-shadow:0 0 22px rgba(124,110,245,0.4);}
+.g-modal-bg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;justify-content:center;}
+.g-modal-bg.open{display:flex;}
+.g-modal{background:rgba(8,5,22,0.99);border:1px solid rgba(124,110,245,0.2);border-radius:18px 18px 0 0;padding:22px 20px 34px;width:100%;max-height:88vh;overflow-y:auto;}
+.g-modal-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.25em;color:var(--purple);margin-bottom:18px;}
+.g-form-row{margin-bottom:14px;}
+.g-form-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;color:var(--muted);margin-bottom:6px;display:block;text-transform:uppercase;}
+.g-form-input{width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(124,110,245,0.18);border-radius:9px;padding:11px 13px;font-size:15px;color:var(--text);font-family:'Rajdhani',sans-serif;outline:none;transition:border-color 0.2s;}
+.g-form-input:focus{border-color:rgba(124,110,245,0.45);}
+.g-form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.g-chip-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
+.g-chip{padding:6px 13px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:transparent;transition:all 0.2s;}
+.g-chip.sel{border-color:var(--purple);color:var(--purple);background:rgba(124,110,245,0.1);}
+.g-btn-row{display:flex;gap:10px;margin-top:20px;}
+.g-btn-cancel{flex:1;padding:11px;border:1px solid var(--border);border-radius:9px;background:transparent;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.14em;color:var(--muted);cursor:pointer;}
+.g-btn-save{flex:2;padding:11px;border:none;border-radius:9px;background:var(--purple);font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.14em;color:#fff;cursor:pointer;font-weight:700;}
+.g-btn-save:hover{background:#6b5ce7;}
+.g-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--dim);}
+`;
+document.head.appendChild(s);
+
+const html=`
+<div class="chat-overlay gorev-overlay" id="gorevOverlay">
+  <div class="chat-hdr">
+    <div class="chat-hdr-l">
+      <button class="back-btn" id="gorevBackBtn">←</button>
+      <div><div class="chat-title" style="color:var(--purple);">GÖREVLER</div><div class="chat-sub">rutin · görev · takvim</div></div>
+    </div>
+    <div class="chat-hdr-r"><div class="risk-bdg" id="gorevCount" style="border-color:rgba(124,110,245,0.35);color:var(--purple);">0 aktif</div></div>
+  </div>
+  <div class="gtab-bar">
+    <div class="gtab active" data-gt="liste">LİSTE</div>
+    <div class="gtab" data-gt="takvim">TAKVİM</div>
+    <div class="gtab" data-gt="arsiv">ARŞİV</div>
+  </div>
+  <div class="gtab-body active" id="gt-liste">
+    <div class="g-section-lbl">bugün</div><div id="g-list-bugun"></div>
+    <div class="g-section-lbl" id="g-lbl-hafta" style="display:none">bu hafta</div><div id="g-list-hafta"></div>
+    <div class="g-section-lbl" id="g-lbl-sonra" style="display:none">sonraki</div><div id="g-list-sonra"></div>
+    <div class="g-fab"><button class="g-fab-btn" id="gorevNewBtn">+ YENİ GÖREV</button></div>
+  </div>
+  <div class="gtab-body" id="gt-takvim">
+    <div class="gcal-grid">
+      <div class="gcal-days"><div class="gcal-lbl">Pt</div><div class="gcal-lbl">Sa</div><div class="gcal-lbl">Ça</div><div class="gcal-lbl">Pe</div><div class="gcal-lbl">Cu</div><div class="gcal-lbl">Ct</div><div class="gcal-lbl">Pa</div></div>
+      <div class="gcal-days" id="gcal-cells"></div>
+    </div>
+    <div class="gcal-events" id="gcal-ev-list"></div>
+    <div class="g-fab"><button class="g-fab-btn" id="gorevNewBtn2">+ YENİ GÖREV</button></div>
+  </div>
+  <div class="gtab-body" id="gt-arsiv">
+    <div id="g-list-arsiv"></div>
+    <div class="g-empty" id="g-arsiv-empty">· arşiv boş ·</div>
+  </div>
+</div>
+<div class="g-modal-bg" id="gorevModal">
+  <div class="g-modal">
+    <div class="g-modal-title">YENİ GÖREV</div>
+    <div class="g-form-row"><label class="g-form-lbl">başlık</label><input class="g-form-input" id="gf-baslik" type="text" placeholder="görev adı..."></div>
+    <div class="g-form-row2">
+      <div><label class="g-form-lbl">tarih</label><input class="g-form-input" id="gf-tarih" type="date"></div>
+      <div><label class="g-form-lbl">saat</label><input class="g-form-input" id="gf-saat" type="time"></div>
+    </div>
+    <div class="g-form-row"><label class="g-form-lbl">hatırlatma</label><input class="g-form-input" id="gf-hat" type="time"></div>
+    <div class="g-form-row"><label class="g-form-lbl">tekrar</label>
+      <div class="g-chip-row" id="gf-tekrar-row">
+        <span class="g-chip sel" data-val="yok">yok</span><span class="g-chip" data-val="gunluk">günlük</span><span class="g-chip" data-val="haftalik">haftalık</span><span class="g-chip" data-val="ozel">özel</span>
+      </div></div>
+    <div class="g-form-row"><label class="g-form-lbl">kategori</label>
+      <div class="g-chip-row" id="gf-kat-row">
+        <span class="g-chip" data-val="saglik">sağlık</span><span class="g-chip sel" data-val="kisisel">kişisel</span><span class="g-chip" data-val="is">iş</span>
+      </div></div>
+    <div class="g-form-row"><label class="g-form-lbl">tür</label>
+      <div class="g-chip-row" id="gf-tur-row">
+        <span class="g-chip sel" data-val="gorev">görev</span><span class="g-chip" data-val="rutin">rutin</span>
+      </div></div>
+    <div class="g-btn-row">
+      <button class="g-btn-cancel" id="gorevMdlKapat">İPTAL</button>
+      <button class="g-btn-save" id="gorevMdlKaydet">KAYDET →</button>
+    </div>
+  </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend',html);
+
+let gv=JSON.parse(localStorage.getItem('theia_gv')||'[]');
+let gav=JSON.parse(localStorage.getItem('theia_gav')||'[]');
+const gSave=()=>localStorage.setItem('theia_gv',JSON.stringify(gv));
+const gavSave=()=>localStorage.setItem('theia_gav',JSON.stringify(gav));
+
+function gBadge(tur,kat){
+  const tc=tur==='rutin'?'gb-rutin':'gb-gorev', tl=tur==='rutin'?'rutin':'görev';
+  const km={saglik:['gb-saglik','sağlık'],kisisel:['gb-kisisel','kişisel'],is:['gb-is','iş']};
+  let k=''; if(kat&&km[kat]) k=`<span class="g-badge ${km[kat][0]}">${km[kat][1]}</span>`;
+  return `<span class="g-badge ${tc}">${tl}</span>${k}`;
+}
+function gCard(g,el){
+  const d=document.createElement('div'); d.className='g-card';
+  d.innerHTML=`<div class="g-check${g.done?' done':''}" data-id="${g.id}"></div>
+    <div class="g-info"><div class="g-title${g.done?' done':''}">${g.baslik}</div>
+    <div class="g-meta"><span class="g-time">${g.saat||''}${g.hat?' · hat.'+g.hat:''}${g.tekrar&&g.tekrar!=='yok'?' · '+g.tekrar:''}</span>${gBadge(g.tur,g.kat)}</div></div>`;
+  d.querySelector('.g-check').addEventListener('click',e=>{e.stopPropagation();gDone(g.id);});
+  el.appendChild(d);
+}
+function gDone(id){
+  const i=gv.findIndex(x=>x.id===id); if(i<0)return;
+  const g=gv.splice(i,1)[0]; g.done=true; gav.unshift(g);
+  gSave();gavSave();gRender();gkLog('LOW','Görev tamamlandı: '+g.baslik);
+}
+function gChipSel(rowId,val){
+  document.getElementById(rowId).querySelectorAll('.g-chip').forEach(c=>c.classList.toggle('sel',c.dataset.val===val));
+}
+function gGetChip(rowId){const s=document.getElementById(rowId).querySelector('.g-chip.sel');return s?s.dataset.val:'';}
+
+function gRender(){
+  const now=new Date(), today=now.toDateString(), week=new Date(now);week.setDate(week.getDate()+7);
+  ['bugun','hafta','sonra'].forEach(k=>document.getElementById('g-list-'+k).innerHTML='');
+  let h=0,s=0;
+  gv.filter(g=>!g.done).forEach(g=>{
+    const gd=g.tarih?new Date(g.tarih):null;
+    if(!gd||gd.toDateString()===today){gCard(g,document.getElementById('g-list-bugun'));}
+    else if(gd<=week){gCard(g,document.getElementById('g-list-hafta'));h++;}
+    else{gCard(g,document.getElementById('g-list-sonra'));s++;}
+  });
+  document.getElementById('g-lbl-hafta').style.display=h?'':'none';
+  document.getElementById('g-lbl-sonra').style.display=s?'':'none';
+  document.getElementById('gorevCount').textContent=gv.filter(g=>!g.done).length+' aktif';
+  const al=document.getElementById('g-list-arsiv'); al.innerHTML='';
+  gav.length?( document.getElementById('g-arsiv-empty').style.display='none', gav.slice(0,20).forEach(g=>gCard(g,al)) ):( document.getElementById('g-arsiv-empty').style.display='flex' );
+  gCalRender();
+}
+function gCalRender(){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  const first=new Date(y,m,1), last=new Date(y,m+1,0);
+  let dow=first.getDay(); if(dow===0)dow=7;
+  const cells=document.getElementById('gcal-cells'); cells.innerHTML='';
+  for(let i=1;i<dow;i++){const e=document.createElement('div');e.className='gcal-cell';e.style.opacity='.15';cells.appendChild(e);}
+  for(let d=1;d<=last.getDate();d++){
+    const e=document.createElement('div'); e.className='gcal-cell';
+    const dd=new Date(y,m,d);
+    if(dd.toDateString()===now.toDateString())e.classList.add('today');
+    if(gv.some(g=>g.tarih&&new Date(g.tarih).toDateString()===dd.toDateString()))e.classList.add('has-task');
+    e.textContent=d; e.addEventListener('click',()=>gCalDay(dd)); cells.appendChild(e);
+  }
+  gCalDay(now);
+}
+function gCalDay(date){
+  const el=document.getElementById('gcal-ev-list');
+  el.innerHTML=`<div class="g-section-lbl" style="padding:0 0 8px">${date.toLocaleDateString('tr-TR',{day:'numeric',month:'long'})}</div>`;
+  const cols=['gd-purple','gd-green','gd-orange'];
+  const tasks=gv.filter(g=>g.tarih&&new Date(g.tarih).toDateString()===date.toDateString()&&!g.done);
+  tasks.length?tasks.forEach((g,i)=>{el.innerHTML+=`<div class="gcal-ev"><div class="gcal-dot ${cols[i%3]}"></div><div class="gcal-ev-title">${g.baslik}</div><div class="gcal-ev-time">${g.saat||''}</div></div>`;}):
+  (el.innerHTML+=`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);padding:10px 0">· görev yok ·</div>`);
+}
+function gModalAc(){
+  document.getElementById('gf-baslik').value='';
+  document.getElementById('gf-tarih').value=new Date().toISOString().split('T')[0];
+  document.getElementById('gf-saat').value='';
+  document.getElementById('gf-hat').value='';
+  gChipSel('gf-tekrar-row','yok'); gChipSel('gf-kat-row','kisisel'); gChipSel('gf-tur-row','gorev');
+  document.getElementById('gorevModal').classList.add('open');
+}
+function gModalKapat(){document.getElementById('gorevModal').classList.remove('open');}
+function gKaydet(){
+  const b=document.getElementById('gf-baslik').value.trim(); if(!b){document.getElementById('gf-baslik').focus();return;}
+  gv.push({id:Date.now().toString(),baslik:b,tarih:document.getElementById('gf-tarih').value,saat:document.getElementById('gf-saat').value,hat:document.getElementById('gf-hat').value,tekrar:gGetChip('gf-tekrar-row'),kat:gGetChip('gf-kat-row'),tur:gGetChip('gf-tur-row'),done:false,created:new Date().toISOString()});
+  gSave(); gModalKapat(); gRender(); gkLog('LOW','Görev eklendi: '+b);
+}
+
+window.openGorev=function(){window.warpOpen(()=>{document.getElementById('gorevOverlay').classList.add('open');gRender();});};
+window.closeGorev=function(){window.warpClose(()=>{document.getElementById('gorevOverlay').classList.remove('open');});};
+
+window.initGorev=function(){
+  document.getElementById('gorevBackBtn').addEventListener('click',window.closeGorev);
+  document.getElementById('gorevNewBtn').addEventListener('click',gModalAc);
+  document.getElementById('gorevNewBtn2').addEventListener('click',gModalAc);
+  document.getElementById('gorevMdlKapat').addEventListener('click',gModalKapat);
+  document.getElementById('gorevMdlKaydet').addEventListener('click',gKaydet);
+  document.getElementById('gorevModal').addEventListener('click',e=>{if(e.target===document.getElementById('gorevModal'))gModalKapat();});
+  document.querySelectorAll('.gtab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.gtab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.gtab-body').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); document.getElementById('gt-'+t.dataset.gt).classList.add('active');
+  }));
+  ['gf-tekrar-row','gf-kat-row','gf-tur-row'].forEach(r=>document.getElementById(r).querySelectorAll('.g-chip').forEach(c=>c.addEventListener('click',()=>gChipSel(r,c.dataset.val))));
+};
+})();
+
+</script>
 
 <div id="wake-status"></div>
 
@@ -1720,7 +2495,17 @@ function startPassiveListening() {
     });
 }
 
+// Wake engine'i temiz kapat (aktif STT'yi korur)
+function _stopWakeEngine() {
+    if (wakeTimeout) { clearTimeout(wakeTimeout); wakeTimeout = null; }
+    isAwake = false;
+    if (wakeSocket) { try { wakeSocket.close(); } catch(e){} wakeSocket = null; }
+    if (wakeStream) { wakeStream.getTracks().forEach(t => t.stop()); wakeStream = null; }
+    if (wakeAudioCtx) { try { wakeAudioCtx.close(); } catch(e){} wakeAudioCtx = null; }
+}
+
 function wakeUp() {
+    if (isListening) return; // Kullanıcı zaten kayıt yapıyorsa müdahale etme
     isAwake = true;
     if (wakeTimeout) clearTimeout(wakeTimeout);
     wakeStatus('Hey Theia! Kaptan Theia seni dinliyor...', '#ff0');
@@ -1731,26 +2516,21 @@ function wakeUp() {
         body: JSON.stringify({ text: 'Kaptan Theia seni dinliyor', voice: 'tr' })
     }).then(r => r.blob()).then(b => new Audio(URL.createObjectURL(b)).play()).catch(() => {});
 
-    if (wakeSocket) { wakeSocket.close(); wakeSocket = null; }
-    if (wakeStream) { wakeStream.getTracks().forEach(t => t.stop()); wakeStream = null; }
-    if (wakeAudioCtx) { wakeAudioCtx.close(); wakeAudioCtx = null; }
+    _stopWakeEngine();
 
+    listenStartTime = Date.now();
     if (typeof startListening === 'function') {
         startListening();
     }
-
-    wakeTimeout = setTimeout(() => goToSleep(), 30000);
+    // Wake word ile başlatıldığında 60 saniye bekle (uzun duraklamalar için)
+    wakeTimeout = setTimeout(() => goToSleep(), 60000);
 }
 
 function goToSleep() {
     isAwake = false;
     if (wakeTimeout) clearTimeout(wakeTimeout);
     wakeStatus('Pasif dinlemede... "Hey Theia" ile uyandır', '#0f0');
-
-    if (typeof stopListening === 'function') {
-        stopListening();
-    }
-
+    // stopListening çağırma — kullanıcı PTT butonuyla kendisi durduracak
     startPassiveListening();
 }
 
