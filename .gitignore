@@ -15,3 +15,6 @@ nohup.out
 static/YEDEK.html
 static/test.html
 static/lab.html
+vosk-models/
+graphify-out/
+.claude/

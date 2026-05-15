@@ -1,8 +1,9 @@
 import asyncio
 import json
+import logging
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket
 from fastapi.responses import StreamingResponse
 from api.schemas import (
     MemoryWrite,
@@ -314,3 +315,43 @@ async def gorev_delete(gid: str):
     con = _gorev_db()
     con.execute("DELETE FROM gorevler WHERE id=?", (gid,))
     con.commit(); con.close()
+
+
+# --- STT WebSocket (Vosk offline Türkçe) ---
+_vosk_model = None
+
+def _get_vosk_model():
+    global _vosk_model
+    if _vosk_model is None:
+        from vosk import Model
+        model_path = Path(__file__).parent.parent / "vosk-models" / "vosk-model-small-tr-0.3"
+        _vosk_model = Model(str(model_path))
+        logging.info(f"Vosk model yüklendi: {model_path}")
+    return _vosk_model
+
+@router.websocket("/ws/stt")
+async def stt_ws(ws: WebSocket):
+    from starlette.websockets import WebSocketDisconnect
+    await ws.accept()
+    try:
+        from vosk import KaldiRecognizer
+        model = _get_vosk_model()
+        rec = KaldiRecognizer(model, 16000)
+        while True:
+            data = await ws.receive_bytes()
+            if rec.AcceptWaveform(bytes(data)):
+                result = json.loads(rec.Result())
+                text = result.get("text", "").strip()
+                if text:
+                    await ws.send_json({"text": text, "final": True})
+            else:
+                partial = json.loads(rec.PartialResult())
+                ptext = partial.get("partial", "").strip()
+                if ptext:
+                    await ws.send_json({"text": ptext, "final": False})
+    except WebSocketDisconnect:
+        pass
+    except RuntimeError:
+        pass
+    except Exception as e:
+        logging.warning(f"STT WS hatası: {e}")

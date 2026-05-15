@@ -470,7 +470,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div class="top-brand">THEIA<span>·</span>PORTAL</div>
   <div class="top-right">
     <div class="status-dot"></div>
-    <a href="theia_mimari_v3_1.html" target="_blank" class="arch-link">MİMARİ HARİTA ↗</a>
+    <a href="theia_mimari_v4_0.html" target="_blank" class="arch-link">MİMARİ HARİTA ↗</a>
     <div class="top-time" id="topTime">--:--:--</div>
   </div>
 </div>
@@ -851,13 +851,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 </div>
 
 <script>
-const SOUL_API = 'http://100.115.79.121:8000';
+const SOUL_API = 'http://localhost:8000';
 
 /* ── STATE ── */
 let sesId = 'SES_' + Math.random().toString(36).slice(2,6).toUpperCase();
 let curModel = 'claude', curColor = '#7C6EF5';
 let isThinking = false, isChatOpen = false, isListening = false;
 let recognition = null, micAF = null;
+let _voskWs = null, _voskAudio = {ctx:null,source:null,processor:null,stream:null}, _voskAccum = '';
 let msgStore = [];
 let sessions = JSON.parse(localStorage.getItem('theia_v2_sessions') || '[]');
 
@@ -1294,31 +1295,7 @@ function initVoice() {
     gkLog('LOW', 'STT: Capacitor native');
   } else {
     window._useCapSpeech = false;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      document.getElementById('micBtn').style.opacity = '0.3';
-      gkLog('WARN', 'STT: kullanılamıyor');
-      return;
-    }
-    recognition = new SR();
-    recognition.lang = 'tr-TR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.onresult = e => {
-      const tx = Array.from(e.results).map(r => r[0].transcript).join('');
-      document.getElementById('micTx').textContent = tx;
-      if (e.results[0].isFinal) {
-        const f = e.results[0][0].transcript.trim();
-        stopListening();
-        if (f) { document.getElementById('chatTa').value = f; sendMsg(); }
-      }
-    };
-    recognition.onerror = e => {
-      document.getElementById('micTx').textContent = 'Hata: ' + e.error;
-      setTimeout(stopListening, 1400);
-    };
-    recognition.onend = () => { if (isListening) stopListening(); };
-    gkLog('LOW', 'STT: Web SpeechRecognition');
+    gkLog('LOW', 'STT: Vosk WebSocket (offline Türkçe)');
   }
 }
 
@@ -1384,14 +1361,45 @@ async function startListening() {
     }
 
   } else {
-    if (!recognition) return;
-    isListening = true;
-    try { recognition.start(); } catch(e) { isListening = false; return; }
-    document.getElementById('micBtn')?.classList.add('micon');
-    document.getElementById('sesPttBtn')?.classList.add('active');
-    document.getElementById('micWaveSvg')?.style.setProperty('opacity','1');
-    document.getElementById('micStat').textContent = 'DİNLİYORUM...';
-    micWave();
+    // Vosk WebSocket STT
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
+      const ws = new WebSocket('ws://localhost:8000/api/ws/stt');
+      ws.binaryType = 'arraybuffer';
+      await new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('WS bağlantısı başarısız')); });
+      const audioCtx = new AudioContext({sampleRate: 16000});
+      const source = audioCtx.createMediaStreamSource(stream);
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = ev => {
+        if (!isListening || ws.readyState !== WebSocket.OPEN) return;
+        const f = ev.inputBuffer.getChannelData(0);
+        const b = new Int16Array(f.length);
+        for (let i = 0; i < f.length; i++) b[i] = Math.max(-32768, Math.min(32767, f[i] * 32767));
+        ws.send(b.buffer);
+      };
+      source.connect(processor); processor.connect(audioCtx.destination);
+      _voskWs = ws; _voskAudio = {ctx:audioCtx, source, processor, stream}; _voskAccum = '';
+      ws.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.final && d.text) {
+          _voskAccum += (_voskAccum ? ' ' : '') + d.text;
+          document.getElementById('micTx').textContent = _voskAccum;
+        } else if (!d.final) {
+          document.getElementById('micTx').textContent = (_voskAccum + (d.text ? ' ' + d.text : '')).trim();
+        }
+      };
+      ws.onclose = () => { if (isListening) stopListening(); };
+      isListening = true;
+      document.getElementById('micBtn')?.classList.add('micon');
+      document.getElementById('sesPttBtn')?.classList.add('active');
+      document.getElementById('micWaveSvg')?.style.setProperty('opacity','1');
+      document.getElementById('micStat').textContent = 'DİNLİYORUM...';
+      micWave();
+    } catch(e) {
+      toast('Mikrofon/STT hatası: ' + e.message, '#E85D24');
+      gkLog('WARN', 'STT hata: ' + e.message);
+      stopListening();
+    }
   }
 }
 
@@ -1403,7 +1411,12 @@ function stopListening() {
     capSR.stop().catch(() => {});
     capSR.removeAllListeners().catch(() => {});
   } else {
-    try { recognition?.stop(); } catch(e) {}
+    try { _voskAudio.processor?.disconnect(); } catch(e) {}
+    try { _voskAudio.source?.disconnect(); } catch(e) {}
+    try { _voskAudio.ctx?.close(); } catch(e) {}
+    try { _voskAudio.stream?.getTracks().forEach(t => t.stop()); } catch(e) {}
+    try { _voskWs?.close(); } catch(e) {}
+    _voskWs = null; _voskAudio = {ctx:null,source:null,processor:null,stream:null};
   }
   const final = document.getElementById('micTx').textContent.trim();
   if (final) {
@@ -1487,20 +1500,40 @@ async function speakText(text) {
     } catch(e) {
       gkLog('WARN', 'TTS hata: ' + e.message);
     } finally { stopTtsWave(); }
-  } else if (window.speechSynthesis) {
-    const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = 'tr-TR'; utt.rate = rate;
-    utt.onend = () => stopTtsWave();
-    utt.onerror = () => stopTtsWave();
-    window.speechSynthesis.speak(utt);
-  } else { stopTtsWave(); }
+  } else {
+    // Edge TTS: Soul API /api/speak üzerinden MP3 al ve çal
+    try {
+      const rp = Math.round((rate - 1) * 100);
+      const rateStr = (rp >= 0 ? '+' : '') + rp + '%';
+      const resp = await fetch('/api/speak', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: clean, voice: 'tr', rate: rateStr})
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const aud = new Audio(url);
+      window._ttsAudio = aud;
+      aud.onended = () => { URL.revokeObjectURL(url); window._ttsAudio = null; stopTtsWave(); };
+      aud.onerror = () => { URL.revokeObjectURL(url); window._ttsAudio = null; stopTtsWave(); gkLog('WARN', 'TTS oynatma hatası'); };
+      await aud.play();
+    } catch(e) {
+      stopTtsWave();
+      gkLog('WARN', 'TTS hata: ' + e.message);
+    }
+  }
 }
 
 async function stopSpeaking() {
   if (!isSpeaking) return;
   const capTTS = getCapTTS();
   if (capTTS) { await capTTS.stop().catch(()=>{}); }
-  else { window.speechSynthesis?.cancel(); }
+  else if (window._ttsAudio) {
+    window._ttsAudio.pause();
+    window._ttsAudio.src = '';
+    window._ttsAudio = null;
+  }
   stopTtsWave();
 }
 

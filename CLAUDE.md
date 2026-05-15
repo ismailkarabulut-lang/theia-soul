@@ -1,5 +1,5 @@
 # CLAUDE.md — Theia Projesi · Oturum Bağlamı
-> Son güncelleme: 2026.05.15 · Soul API v0.1.0
+> Son güncelleme: 2026.05.16 · Soul API v0.1.0
 
 Bu dosya yeni bir AI oturumu açıldığında projeyi sıfırdan anlamak için yazılmıştır.
 Tahmin veya yorum yoktur — her satır çalışan koddan türetilmiştir.
@@ -67,9 +67,12 @@ vault üzerine kuruludur.
 │   └── ollama_model.py     ← Yerel Ollama (llama3 varsayılan)
 │
 ├── api/
-│   ├── routes.py           ← Tüm ana endpoint'ler (health/chat/memory/scout/gorev/speak)
+│   ├── routes.py           ← Tüm ana endpoint'ler + WebSocket STT (/api/ws/stt)
 │   ├── persona.py          ← GET /api/persona/snapshot endpoint'i
 │   └── schemas.py          ← Pydantic modeller
+│
+├── vosk-models/            ← Offline STT modelleri (git'e girmiyor)
+│   └── vosk-model-small-tr-0.3/  ← 36MB Türkçe Vosk modeli
 │
 ├── memory/
 │   └── theia.db            ← SQLite: memory + messages + sessions tabloları
@@ -78,13 +81,16 @@ vault üzerine kuruludur.
     ├── index.html          ← ANA KAYNAK — tek sayfa uygulama (tüm modüller burada)
     ├── persona.html        ← Persona analiz sayfası (/persona endpoint'i)
     ├── hud.html            ← HUD görünümü
-    ├── theia_mimari_v3_1.html ← Mimari görsel dokümantasyon
     └── modules/
         ├── vault.js        ← Vault modülü JS
         ├── persona.js      ← Persona modülü JS
         ├── saglik.js       ← Sağlık modülü JS
         ├── gorev.js        ← Görev modülü JS
         └── team.js         ← Team modülü JS
+
+~/theia-electron/           ← Electron masaüstü uygulaması (ayrı dizin)
+├── main.js                 ← Electron ana prosesi (mikrofon izni, PipeWire, no-sandbox)
+└── package.json            ← electron . --no-sandbox
 
 ~/theia/                    ← Telegram botu (ayrı proje)
 ~/TheiaMemory/              ← Obsidian vault
@@ -130,8 +136,9 @@ Scout decay kuralları: 30 gün sessiz → `passive`, 90 gün sessiz → `archiv
 | GET | `/api/scout/summary` | Scout özet istatistik |
 | PATCH | `/api/scout/status/{key}` | Manuel status güncelle |
 | POST | `/api/soul/daily` | Günlük özet yaz (theia-brief) |
-| POST | `/api/speak` | Edge TTS — Türkçe/İngilizce ses üret |
+| POST | `/api/speak` | Edge TTS — Türkçe/İngilizce ses üret (MP3 stream) |
 | GET | `/api/speak/voices` | Kullanılabilir sesler |
+| WS | `/api/ws/stt` | Vosk offline STT — binary PCM16/16kHz alır, JSON transcript döner |
 | GET | `/api/gorev` | Görev listesi |
 | POST | `/api/gorev` | Görev oluştur |
 | PATCH | `/api/gorev/{id}/done` | Görevi tamamla |
@@ -183,7 +190,7 @@ Varsayılan model: `claude` (`.env`'den `DEFAULT_MODEL` ile değiştirilebilir)
 
 ---
 
-## Modül Durumu (2026.05.15)
+## Modül Durumu (2026.05.16)
 
 | Modül | Durum | Not |
 |---|---|---|
@@ -193,7 +200,9 @@ Varsayılan model: `claude` (`.env`'den `DEFAULT_MODEL` ile değiştirilebilir)
 | GATEKEEPER | ✅ Aktif | v2.3 |
 | SAĞLIK | ✅ Aktif | |
 | GÖREV | ✅ Aktif | soul.db bağlı |
-| SES (TTS) | ✅ Aktif | Edge TTS, tr/tr-m/en |
+| TTS (ses çıkış) | ✅ Aktif | Edge TTS → /api/speak → MP3 → Audio element |
+| STT (ses giriş) | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt WebSocket |
+| ELECTRON | ✅ Aktif | ~/theia-electron/ · PipeWire mikrofon · no-sandbox |
 | GÖRÜNTÜ | ⏳ Planlandı | Screenshot → Claude analizi |
 | WHATSAPP | ⏳ Planlandı | Sesli komutla mesaj gönderme |
 | YOUTUBE | ⏳ Planlandı | Kanal istatistikleri + şarkı açma |
@@ -220,12 +229,46 @@ cp ~/theia-app/android/app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/th
 
 ---
 
+## STT (Vosk WebSocket)
+
+**Nasıl çalışır:**
+1. Tarayıcı `getUserMedia` ile mikrofon açar
+2. `AudioContext(sampleRate:16000)` + `ScriptProcessor(4096)` ile PCM16 üretir
+3. `ws://localhost:8000/api/ws/stt` WebSocket'e binary chunk gönderir
+4. `KaldiRecognizer(model, 16000)` her chunk'ı işler
+5. Partial → `{"text":"...", "final":false}` · Final → `{"text":"...", "final":true}`
+6. `micTx` elementi güncellenir; `stopListening()` çağrısında transcript `sendMsg()` ile gönderilir
+
+**Model:** `vosk-models/vosk-model-small-tr-0.3/` (36MB, git'e girmiyor)
+**İndirme:** `wget https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip`
+
+## TTS (Edge TTS)
+
+**Nasıl çalışır:**
+1. `speakText(text)` → `fetch('/api/speak', {text, voice:'tr', rate})`
+2. Soul API → `edge_tts.Communicate` → MP3 stream
+3. `new Audio(blobURL).play()` → hoparlörden ses
+
+Rate dönüşümü: slider (0.5–2.0) → `+X%` format (örn. 1.5 → "+50%")
+
+## Electron Masaüstü Uygulaması
+
+**Konum:** `~/theia-electron/`
+**Başlatma:** `cd ~/theia-electron && npm start`
+
+Kritik Electron flagleri (`main.js`):
+- `WebRTCPipeWireCapturer` — Debian PipeWire mikrofon desteği
+- `use-fake-ui-for-media-stream` — otomatik mikrofon izni
+- `autoplay-policy=no-user-gesture-required` — TTS autoplay
+- `no-sandbox` — GPU sandbox /dev/shm sorunu önleme
+- `setPermissionRequestHandler` + `setPermissionCheckHandler` → callback(true)
+
 ## Geliştirme Notları
 
 - **ANA KAYNAK:** `~/theia-soul/static/index.html` — her zaman buraya yaz
 - GitHub'a manuel commit atılıyor (`~/theia-soul/` → `git push`)
 - `.env` dosyası git'e girmiyor (API anahtarları)
-- `bridge.log` ve `nohup.out` gitignore'da
+- `bridge.log`, `nohup.out`, `vosk-models/` gitignore'da
 - Soul API reload modunda çalışıyor (kod değişince otomatik restart)
 - Servis restart: `sudo systemctl restart theia-soul`
 - Bot restart: `sudo systemctl restart theia`
