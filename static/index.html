@@ -459,6 +459,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .team-agent-card[data-agent="stratejist"]{--ac:#2DD4BF;}
 
 @media(max-width:700px){.team-agents-grid{grid-template-columns:1fr;}}
+
+#wake-status {
+    position: fixed; bottom: 20px; left: 20px;
+    background: rgba(0,0,0,0.75); color: #0f0;
+    padding: 10px 18px; border-radius: 12px;
+    font-size: 14px; z-index: 9999; display: none;
+    font-family: monospace; backdrop-filter: blur(6px);
+    border: 1px solid #0f0; box-shadow: 0 0 15px rgba(0,255,0,0.3);
+}
 </style>
 </head>
 <body>
@@ -1632,5 +1641,119 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="modules/saglik.js"></script>
 <script src="modules/team.js"></script>
 <script src="modules/gorev.js"></script>
+
+<div id="wake-status"></div>
+
+<script>
+// === WAKE WORD MOTORU - "Hey Theia" ===
+const WAKE_WORD = "hey theia";
+let wakeSocket = null;
+let isAwake = false;
+let wakeTimeout = null;
+let wakeAudioCtx = null;
+let wakeStream = null;
+const wakeStatusEl = document.getElementById('wake-status');
+
+function wakeStatus(text, color = '#0f0') {
+    if (!wakeStatusEl) return;
+    wakeStatusEl.style.display = 'block';
+    wakeStatusEl.textContent = text;
+    wakeStatusEl.style.color = color;
+    if (color === '#ff0') {
+        wakeStatusEl.style.background = 'rgba(20,20,0,0.85)';
+        wakeStatusEl.style.borderColor = '#ff0';
+    } else {
+        wakeStatusEl.style.background = 'rgba(0,0,0,0.75)';
+        wakeStatusEl.style.borderColor = '#0f0';
+    }
+}
+
+function startPassiveListening() {
+    if (wakeSocket && wakeSocket.readyState === WebSocket.OPEN) return;
+    try {
+        wakeAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    } catch(e) {
+        console.error("AudioContext başlatılamadı:", e);
+        return;
+    }
+    wakeSocket = new WebSocket('ws://localhost:8000/api/ws/stt');
+    wakeSocket.binaryType = 'arraybuffer';
+
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true } })
+    .then(stream => {
+        wakeStream = stream;
+        const source = wakeAudioCtx.createMediaStreamSource(stream);
+        const processor = wakeAudioCtx.createScriptProcessor(4096, 1, 1);
+        source.connect(processor);
+        processor.connect(wakeAudioCtx.destination);
+
+        processor.onaudioprocess = (e) => {
+            if (wakeSocket && wakeSocket.readyState === WebSocket.OPEN) {
+                const input = e.inputBuffer.getChannelData(0);
+                const pcm = new Int16Array(input.length);
+                for (let i = 0; i < input.length; i++) {
+                    pcm[i] = Math.max(-32768, Math.min(32767, input[i] * 32768));
+                }
+                wakeSocket.send(pcm.buffer);
+            }
+        };
+
+        wakeSocket.onopen = () => wakeStatus('Pasif dinlemede... "Hey Theia" ile uyandır', '#0f0');
+        wakeSocket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.text && data.text.toLowerCase().includes(WAKE_WORD) && !isAwake) {
+                    wakeUp();
+                }
+            } catch(e) {}
+        };
+        wakeSocket.onclose = () => {
+            if (!isAwake) setTimeout(startPassiveListening, 3000);
+        };
+    })
+    .catch(err => {
+        console.error('Mikrofon hatası:', err);
+        wakeStatus('Mikrofon erişilemedi!', '#f00');
+    });
+}
+
+function wakeUp() {
+    isAwake = true;
+    if (wakeTimeout) clearTimeout(wakeTimeout);
+    wakeStatus('Hey Theia! Kaptan Theia seni dinliyor...', '#ff0');
+
+    fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Kaptan Theia seni dinliyor', voice: 'tr' })
+    }).then(r => r.blob()).then(b => new Audio(URL.createObjectURL(b)).play()).catch(() => {});
+
+    if (wakeSocket) { wakeSocket.close(); wakeSocket = null; }
+    if (wakeStream) { wakeStream.getTracks().forEach(t => t.stop()); wakeStream = null; }
+    if (wakeAudioCtx) { wakeAudioCtx.close(); wakeAudioCtx = null; }
+
+    if (typeof startListening === 'function') {
+        startListening();
+    }
+
+    wakeTimeout = setTimeout(() => goToSleep(), 30000);
+}
+
+function goToSleep() {
+    isAwake = false;
+    if (wakeTimeout) clearTimeout(wakeTimeout);
+    wakeStatus('Pasif dinlemede... "Hey Theia" ile uyandır', '#0f0');
+
+    if (typeof stopListening === 'function') {
+        stopListening();
+    }
+
+    startPassiveListening();
+}
+
+window.addEventListener('load', () => {
+    startPassiveListening();
+});
+</script>
 </body>
 </html>

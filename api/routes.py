@@ -2,8 +2,9 @@ import asyncio
 import json
 import logging
 import uuid
+import webbrowser
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, WebSocket
+from fastapi import APIRouter, HTTPException, Request, WebSocket
 from fastapi.responses import StreamingResponse
 from api.schemas import (
     MemoryWrite,
@@ -355,3 +356,27 @@ async def stt_ws(ws: WebSocket):
         pass
     except Exception as e:
         logging.warning(f"STT WS hatası: {e}")
+
+
+# --- YouTube Arama ---
+@router.post("/youtube/search")
+async def youtube_search(request: Request):
+    try:
+        body = await request.json()
+        query = body.get("query", "").strip()
+        if not query:
+            return {"ok": False, "error": "Arama sorgusu boş olamaz"}
+
+        import urllib.parse
+        encoded = urllib.parse.quote(query)
+        url = f"https://www.youtube.com/results?search_query={encoded}"
+        webbrowser.open(url)
+
+        return {
+            "ok": True,
+            "query": query,
+            "url": url,
+            "message": f"YouTube'da '{query}' aranıyor..."
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
