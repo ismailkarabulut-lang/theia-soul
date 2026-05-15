@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theia — Mimari Harita v4.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&family=Rajdhani:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #03020a;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.07);
+  --text: rgba(255,255,255,0.85);
+  --muted: rgba(255,255,255,0.35);
+  --dim: rgba(255,255,255,0.12);
+  --purple: #7C6EF5;
+  --green: #1D9E75;
+  --orange: #EF9F27;
+  --red: #E85D24;
+  --blue: #4FA8D5;
+  --pink: #C77DFF;
+  --gold: #E8B86D;
+  --teal: #2DD4BF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse at 10% 15%, rgba(124,110,245,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(45,212,191,0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(10,6,25,1) 0%, transparent 80%);
+  pointer-events:none; z-index:0;
+}
+.container { max-width:1200px; margin:0 auto; padding:52px 28px; position:relative; z-index:1; }
+
+/* HEADER */
+.header { text-align:center; margin-bottom:64px; padding-bottom:40px; border-bottom:1px solid var(--border); position:relative; }
+.header::after { content:''; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%); width:180px; height:1px; background:linear-gradient(90deg,transparent,var(--purple),transparent); }
+.eyebrow { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.38em; color:var(--purple); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:12px; }
+.eyebrow::before,.eyebrow::after { content:''; width:36px; height:1px; background:linear-gradient(90deg,transparent,var(--purple)); }
+.eyebrow::after { transform:scaleX(-1); }
+h1 { font-family:'Orbitron',sans-serif; font-size:clamp(26px,4.5vw,44px); font-weight:900; letter-spacing:.1em; color:#fff; text-shadow:0 0 60px rgba(124,110,245,0.4); margin-bottom:10px; }
+h1 span { color:var(--purple); }
+.header-sub { font-size:15px; color:var(--muted); letter-spacing:.05em; margin-bottom:28px; }
+.badges { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; }
+.badge-item { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.1em; padding:4px 13px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--muted); }
+.badge-item.on { border-color:rgba(29,158,117,0.4); color:var(--green); background:rgba(29,158,117,0.07); }
+.badge-item.warn { border-color:rgba(239,159,39,0.35); color:var(--orange); background:rgba(239,159,39,0.06); }
+.badge-item.alert { border-color:rgba(232,93,36,0.4); color:var(--red); background:rgba(232,93,36,0.07); }
+.badge-item.concept { border-color:rgba(79,168,213,0.35); color:var(--blue); background:rgba(79,168,213,0.06); }
+
+/* SECTION */
+.section { margin-bottom:60px; }
+.sec-title { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:600; letter-spacing:.3em; color:var(--muted); text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:13px; }
+.sec-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+.sec-num { width:22px; height:22px; border-radius:5px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:8px; color:var(--dim); }
+
+/* GRAPH */
+.graph-wrap { position:relative; width:100%; height:700px; background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
+.graph-wrap svg { position:absolute; inset:0; width:100%; height:100%; }
+.graph-node { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:2; }
+.gn-box { padding:10px 16px; border-radius:11px; border:1px solid var(--border); background:linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015)); backdrop-filter:blur(12px); text-align:center; white-space:nowrap; transition:all 0.3s cubic-bezier(0.23,1,0.32,1); box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+.gn-box:hover { transform:translateY(-3px) scale(1.06); box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 40px var(--nc,rgba(124,110,245,0.2)); border-color:var(--nc,rgba(124,110,245,0.4)); }
+.gn-label { font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; }
+.gn-sub { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); letter-spacing:.06em; margin-top:2px; }
+.gn-purple .gn-box { border-color:rgba(124,110,245,0.35); background:rgba(124,110,245,0.1); --nc:rgba(124,110,245,0.4); } .gn-purple .gn-label { color:var(--purple); }
+.gn-green  .gn-box { border-color:rgba(29,158,117,0.35);  background:rgba(29,158,117,0.09);  --nc:rgba(29,158,117,0.4);  } .gn-green  .gn-label { color:var(--green); }
+.gn-orange .gn-box { border-color:rgba(239,159,39,0.35);  background:rgba(239,159,39,0.08);  --nc:rgba(239,159,39,0.4);  } .gn-orange .gn-label { color:var(--orange); }
+.gn-blue   .gn-box { border-color:rgba(79,168,213,0.35);  background:rgba(79,168,213,0.09);  --nc:rgba(79,168,213,0.4);  } .gn-blue   .gn-label { color:var(--blue); }
+.gn-pink   .gn-box { border-color:rgba(199,125,255,0.35); background:rgba(199,125,255,0.09); --nc:rgba(199,125,255,0.4); } .gn-pink   .gn-label { color:var(--pink); }
+.gn-red    .gn-box { border-color:rgba(232,93,36,0.35);   background:rgba(232,93,36,0.09);   --nc:rgba(232,93,36,0.4);   } .gn-red    .gn-label { color:var(--red); }
+.gn-gold   .gn-box { border-color:rgba(232,184,109,0.35); background:rgba(232,184,109,0.08); --nc:rgba(232,184,109,0.4); } .gn-gold   .gn-label { color:var(--gold); }
+.gn-teal   .gn-box { border-color:rgba(45,212,191,0.35);  background:rgba(45,212,191,0.09);  --nc:rgba(45,212,191,0.4);  } .gn-teal   .gn-label { color:var(--teal); }
+.gn-core .gn-box { box-shadow:0 0 30px rgba(124,110,245,0.25); }
+.gn-gatekeeper .gn-box { box-shadow:0 0 24px rgba(232,93,36,0.3); animation:gatePulse 2.5s ease-in-out infinite; }
+@keyframes gatePulse { 0%,100%{box-shadow:0 0 16px rgba(232,93,36,0.2);}50%{box-shadow:0 0 32px rgba(232,93,36,0.5);} }
+.legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; padding:0 6px; }
+.legend-item { display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:.06em; }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+#tooltip { position:absolute; pointer-events:none; background:rgba(8,5,22,0.95); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text); letter-spacing:.05em; opacity:0; transition:opacity 0.15s; z-index:10; white-space:nowrap; }
+
+/* GRAPHIFY SECTION */
+.gfy-wrap { background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
+.gfy-tab-bar { display:flex; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.3); }
+.gfy-tab { flex:1; padding:13px 0; text-align:center; font-family:'Orbitron',sans-serif; font-size:8px; letter-spacing:.18em; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; }
+.gfy-tab.active { color:var(--teal); border-bottom-color:var(--teal); }
+.gfy-pane { display:none; padding:28px; }
+.gfy-pane.active { display:block; }
+
+/* God Nodes */
+.god-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+.god-card { background:rgba(45,212,191,0.05); border:1px solid rgba(45,212,191,0.15); border-radius:12px; padding:16px 18px; }
+.god-rank { font-family:'Orbitron',sans-serif; font-size:8px; letter-spacing:.2em; color:var(--teal); margin-bottom:6px; }
+.god-name { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); margin-bottom:4px; }
+.god-meta { font-size:12px; color:var(--muted); }
+.god-edges { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--teal); margin-top:6px; }
+
+/* Surprising Connections */
+.surprise-list { display:flex; flex-direction:column; gap:12px; }
+.surprise-item { background:rgba(239,159,39,0.04); border:1px solid rgba(239,159,39,0.12); border-radius:10px; padding:14px 16px; }
+.surprise-conn { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--orange); margin-bottom:5px; }
+.surprise-path { font-size:12px; color:var(--muted); }
+.surprise-tag { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:8px; padding:2px 7px; border-radius:4px; border:1px solid rgba(239,159,39,0.2); color:var(--orange); margin-top:5px; }
+
+/* Communities */
+.comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.comm-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 15px; transition:border-color 0.2s; }
+.comm-card:hover { border-color:rgba(124,110,245,0.3); }
+.comm-name { font-family:'Orbitron',sans-serif; font-size:8.5px; letter-spacing:.15em; color:var(--purple); margin-bottom:5px; }
+.comm-nodes { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
+.comm-coh { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim); margin-top:4px; }
+
+/* Stats bar */
+.gfy-stats { display:flex; gap:0; border-bottom:1px solid var(--border); }
+.gfy-stat { flex:1; padding:16px 20px; border-right:1px solid var(--border); text-align:center; }
+.gfy-stat:last-child { border-right:none; }
+.gfy-stat-val { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:700; color:var(--teal); }
+.gfy-stat-lab { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.14em; color:var(--dim); margin-top:4px; }
+
+/* RETRIEVAL */
+.retrieval-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; }
+.retrieval-intro { font-size:14px; color:var(--muted); margin-bottom:22px; line-height:1.8; }
+.retrieval-grid { display:grid; grid-template-columns:1fr 36px 1fr; gap:0; align-items:center; }
+.ret-col { display:flex; flex-direction:column; gap:12px; }
+.ret-plus { text-align:center; font-size:22px; color:var(--dim); }
+.ret-layer { padding:14px 16px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.02); }
+.ret-layer.soul { border-color:rgba(45,212,191,0.2); }
+.ret-layer.memory { border-color:rgba(239,159,39,0.2); }
+.ret-layer.result { border-color:rgba(124,110,245,0.25); background:rgba(124,110,245,0.04); }
+.ret-layer.ok { border-color:rgba(29,158,117,0.2); }
+.rl-title { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:.2em; color:var(--text); margin-bottom:8px; }
+.rl-sub { font-size:12px; color:var(--muted); margin-bottom:3px; }
+.ret-note { margin-top:18px; padding:12px 16px; background:rgba(255,255,255,0.02); border-radius:8px; border-left:2px solid var(--dim); font-size:12px; color:var(--dim); }
+
+/* VAULT */
+.vault-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.vault-intro { font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.8; }
+.vault-tree { font-family:'JetBrains Mono',monospace; font-size:12px; line-height:2; color:var(--muted); background:rgba(0,0,0,0.25); padding:16px 18px; border-radius:10px; border:1px solid var(--border); }
+.vt-root { color:var(--gold); }
+.vt-dir { color:var(--blue); }
+.vt-active { color:var(--teal); }
+.vt-muted { color:var(--dim); }
+.vt-note { color:var(--dim); font-size:10px; }
+
+/* CARDS */
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.25s,box-shadow 0.25s; }
+.card:hover { border-color:rgba(var(--cc-r,124),var(--cc-g,110),var(--cc-b,245),0.35); box-shadow:0 6px 28px rgba(0,0,0,0.4); }
+.card-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid var(--border); }
+.card-title { font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700; letter-spacing:.2em; color:var(--text); }
+.card-tag { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.1em; padding:3px 9px; border-radius:20px; border:1px solid var(--border); color:var(--muted); }
+.card-tag.on { border-color:rgba(29,158,117,0.4); color:var(--green); background:rgba(29,158,117,0.08); }
+.card-tag.warn { border-color:rgba(239,159,39,0.35); color:var(--orange); }
+.card-tag.todo { border-color:rgba(79,168,213,0.3); color:var(--blue); }
+.card-body { padding:12px 16px; font-size:13px; color:var(--muted); line-height:1.7; }
+.card-body strong { color:var(--text); }
+.card-body code { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:3px; }
+.card-meta { padding:10px 16px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); line-height:1.8; border-top:1px solid var(--border); }
+.card-meta code { color:var(--muted); }
+
+/* TIMELINE */
+.timeline { display:flex; flex-direction:column; gap:0; position:relative; padding-left:24px; }
+.timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:1px; background:linear-gradient(180deg,var(--purple),transparent); }
+.tl-item { position:relative; padding:10px 0 10px 20px; }
+.tl-item::before { content:''; position:absolute; left:-18px; top:17px; width:8px; height:8px; border-radius:50%; border:1.5px solid var(--border); background:var(--bg); }
+.tl-item.done::before { border-color:var(--green); background:rgba(29,158,117,0.2); }
+.tl-item.partial::before { border-color:var(--orange); background:rgba(239,159,39,0.15); }
+.tl-item.todo::before { border-color:var(--dim); }
+.tl-text { font-size:13px; color:var(--muted); }
+.tl-text code { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:3px; }
+.tl-item.done .tl-text { color:rgba(255,255,255,0.6); }
+
+/* PERSONA SNAP */
+.persona-snap { background:var(--surface); border:1px solid rgba(124,110,245,0.2); border-radius:16px; overflow:hidden; }
+.persona-snap-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.persona-snap-title { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple); }
+.persona-snap-time { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); }
+.persona-snap-grid { display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--border); }
+.persona-snap-stat { padding:18px 14px; border-right:1px solid var(--border); text-align:center; }
+.persona-snap-stat:last-child { border-right:none; }
+.ps-val { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700; color:var(--snc,var(--purple)); }
+.ps-lab { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:.1em; color:var(--dim); margin-top:4px; }
+.persona-snap-quote { padding:16px 22px; font-size:13px; color:var(--muted); border-top:1px solid var(--border); }
+.persona-snap-quote em { color:var(--purple); font-style:normal; }
+.psq-label { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim); display:block; margin-bottom:6px; letter-spacing:.1em; }
+
+/* CMD STRIP */
+.cmd-strip { font-family:'JetBrains Mono',monospace; font-size:12px; line-height:2.1; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:14px; padding:22px 26px; color:var(--muted); overflow-x:auto; }
+.prompt { color:var(--green); user-select:none; }
+.cmd { color:var(--text); }
+.comment { color:var(--dim); }
+
+/* CODE TABS */
+.tab-switcher { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.tab-nav { display:flex; border-bottom:1px solid var(--border); overflow-x:auto; background:rgba(0,0,0,0.2); }
+.tab-btn { flex-shrink:0; padding:11px 18px; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; color:var(--muted); cursor:pointer; border:none; background:transparent; border-bottom:2px solid transparent; transition:all 0.2s; white-space:nowrap; }
+.tab-btn.active { color:var(--purple); border-bottom-color:var(--purple); background:rgba(124,110,245,0.05); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+.code-block-wrap { position:relative; }
+.copy-btn { position:absolute; top:12px; right:12px; z-index:2; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; padding:4px 10px; border-radius:5px; border:1px solid rgba(124,110,245,0.25); background:rgba(124,110,245,0.08); cursor:pointer; color:var(--purple); transition:all 0.2s ease; }
+.copy-btn:hover { background:rgba(124,110,245,0.25); }
+.copy-btn.copied { color:var(--green); border-color:rgba(29,158,117,0.4); background:rgba(29,158,117,0.1); }
+pre.code-block { font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.9; background:rgba(0,0,0,0.45); padding:24px 28px; margin:0; overflow-x:auto; color:rgba(255,255,255,0.75); }
+.kw   { color:#7C6EF5; font-weight:500; }
+.fn   { color:#4FA8D5; }
+.str  { color:#E8B86D; }
+.num  { color:#2DD4BF; }
+.cm   { color:rgba(255,255,255,0.28); font-style:italic; }
+.dec  { color:#C77DFF; }
+.cls  { color:#EF9F27; }
+.op   { color:rgba(255,255,255,0.45); }
+
+/* LAYER STACK */
+.layer-stack { display:flex; flex-direction:column; gap:0; }
+.layer-item { position:relative; display:flex; align-items:stretch; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; opacity:0; transform:translateX(-40px); transition:opacity 0.6s ease, transform 0.6s ease; }
+.layer-item.visible { opacity:1; transform:translateX(0); }
+.layer-accent { width:5px; flex-shrink:0; background:var(--lc,var(--purple)); }
+.layer-body { padding:18px 22px; flex:1; }
+.layer-name { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; letter-spacing:.25em; color:var(--lc,var(--purple)); text-transform:uppercase; margin-bottom:10px; }
+.layer-pills { display:flex; flex-wrap:wrap; gap:7px; }
+.layer-pill { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.05em; padding:3px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:var(--muted); transition:all 0.2s ease; }
+.layer-pill:hover { border-color:var(--lc,var(--purple)); color:var(--text); background:rgba(255,255,255,0.07); }
+.layer-pill.planned { border-style:dashed; opacity:0.6; }
+.layer-arrow { display:flex; justify-content:center; align-items:center; padding:6px 0; position:relative; }
+.layer-arrow::before { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:linear-gradient(180deg, var(--border), transparent); transform:translateX(-50%); }
+.arrow-dot { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.03); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--dim); z-index:1; animation:arrowBounce 2s ease-in-out infinite; }
+@keyframes arrowBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+
+/* FOOTER */
+.footer { text-align:center; padding:30px 0 10px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.2em; border-top:1px dashed var(--border); margin-top:60px; }
+
+@media (max-width:760px) {
+  .graph-wrap { height:820px; }
+  h1 { font-size:32px; }
+  .retrieval-grid { grid-template-columns:1fr; }
+  .vault-grid { grid-template-columns:1fr; }
+  .tab-btn { font-size:10px; padding:10px 14px; }
+  .persona-snap-grid { grid-template-columns:repeat(3,1fr); }
+  .gfy-stats { flex-wrap:wrap; }
+  .gfy-stat { min-width:50%; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="eyebrow">Architecture · Live Snapshot</div>
+    <h1>THEIA <span>·</span> Mimari Haritası</h1>
+    <div class="header-sub">v4.0 · 2026.05.15 · Graphify Entegreli · 267 node · 429 edge · 25 community</div>
+    <div class="badges">
+      <span class="badge-item on">● THEIA-SOUL.SERVICE · UP · 3 GÜN</span>
+      <span class="badge-item on">● THEIA.SERVICE · UP · TELEGRAM BOT</span>
+      <span class="badge-item on">● BRIDGE · CRON 15dk</span>
+      <span class="badge-item on">● SOUL_AGENT · AKTİF</span>
+      <span class="badge-item on">● /API/SOUL/DAILY · AKTİF</span>
+      <span class="badge-item on">● CORE_IDENTITY · DB'DE</span>
+      <span class="badge-item alert">● GATEKEEPER v2.3 · AKTİF</span>
+      <span class="badge-item on">● PERSONA ENGINE v1.0 · UP</span>
+      <span class="badge-item on">● SES MODÜLÜ · STT/TTS · AKTİF</span>
+      <span class="badge-item on">● GÖREV MODÜLÜ · AKTİF · SOUL DB</span>
+      <span class="badge-item on">● VAULT MODÜLÜ · AKTİF</span>
+      <span class="badge-item on">● SAĞLIK MODÜLÜ · AKTİF</span>
+      <span class="badge-item on">● TEAM · BİLİŞSEL MERCEK · AKTİF</span>
+      <span class="badge-item on">● REDMI NOTE 15 PRO · TERMUX</span>
+      <span class="badge-item on">● GRAPHIFY · 38.7x TOKEN REDUCTION</span>
+      <span class="badge-item">TAILSCALE · 100.115.79.121</span>
+      <span class="badge-item on">● 32GB RAM · BATARYA YENİLENDİ</span>
+      <span class="badge-item warn">APK · IP SORUNU · ÇÖZÜLECEK</span>
+      <span class="badge-item warn">GÖRÜNTÜ MODÜLÜ · YAKINDA</span>
+      <span class="badge-item warn">WHATSAPP MESAJ · YAKINDA</span>
+      <span class="badge-item warn">YOUTUBE MODÜLÜ · YAKINDA</span>
+      <span class="badge-item warn">GOOGLE CALENDAR · YAKINDA</span>
+      <span class="badge-item warn">/API/TEAM/ANALYZE · BACKEND EKSİK</span>
+      <span class="badge-item concept">BACKCORE · ESP32-S3 · CONCEPT</span>
+    </div>
+  </div>
+
+  <!-- 01 — TOPOLOJİ -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">01</span>Sistem Topolojisi</div>
+    <div class="graph-wrap" id="graph-container">
+      <svg id="graph-svg"></svg>
+      <div id="tooltip"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#C77DFF"></span>İnsan / Dış</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#4FA8D5"></span>Giriş Yüzeyi</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#7C6EF5"></span>Çekirdek / API</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#2DD4BF"></span>Agent Katmanı</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#EF9F27"></span>Veri / Hafıza</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>Köprü / Servis</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#E8B86D"></span>Otomasyon</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#E85D24"></span>Güvenlik / Gatekeeper</div>
+      <div class="legend-item" style="gap:9px;">
+        <span style="display:inline-block;width:24px;border-top:1.5px dashed rgba(255,255,255,0.3);"></span>
+        <span>Asenkron / Pasif / Planned</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 — GRAPHIFY ANALİZİ -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">02</span>Graphify · Kod Bilgi Grafiği · 2026.05.15</div>
+    <div class="gfy-wrap">
+      <div class="gfy-stats">
+        <div class="gfy-stat"><div class="gfy-stat-val">267</div><div class="gfy-stat-lab">NODE</div></div>
+        <div class="gfy-stat"><div class="gfy-stat-val">429</div><div class="gfy-stat-lab">EDGE</div></div>
+        <div class="gfy-stat"><div class="gfy-stat-val">25</div><div class="gfy-stat-lab">COMMUNITY</div></div>
+        <div class="gfy-stat"><div class="gfy-stat-val">38.7x</div><div class="gfy-stat-lab">TOKEN REDUCTION</div></div>
+        <div class="gfy-stat"><div class="gfy-stat-val">82%</div><div class="gfy-stat-lab">EXTRACTED</div></div>
+      </div>
+      <div class="gfy-tab-bar">
+        <div class="gfy-tab active" data-gfy="god">GOD NODES</div>
+        <div class="gfy-tab" data-gfy="surprise">SÜRPRİZ BAĞLANTILAR</div>
+        <div class="gfy-tab" data-gfy="community">COMMUNİTY'LER</div>
+        <div class="gfy-tab" data-gfy="hyperedge">HYPEREDGELEr</div>
+      </div>
+
+      <div class="gfy-pane active" id="gfy-god">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">En çok bağlantıya sahip node'lar — bunlar kırılırsa sistemin geri kalanı etkilenir.</div>
+        <div class="god-grid">
+          <div class="god-card">
+            <div class="god-rank">#1 · GOD NODE</div>
+            <div class="god-name">get_db()</div>
+            <div class="god-meta">core/db.py · SQLite async bağlantı fabrikası</div>
+            <div class="god-edges">17 edge — her okuma/yazma buradan geçer</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#2 · GOD NODE</div>
+            <div class="god-name">BaseModel</div>
+            <div class="god-meta">core/base_model.py · tüm AI sağlayıcıların abstract sınıfı</div>
+            <div class="god-edges">15 edge — Claude/DeepSeek/Kimi/Ollama implement eder</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#3 · GOD NODE</div>
+            <div class="god-name">index.html</div>
+            <div class="god-meta">static/index.html · Soul HUD tek sayfa uygulaması</div>
+            <div class="god-edges">14 edge — tüm overlay modüllerin host'u</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#4 · CROSS-BRIDGE</div>
+            <div class="god-name">chat()</div>
+            <div class="god-meta">api/routes.py · en yüksek betweenness centrality (0.058)</div>
+            <div class="god-edges">12 edge — API Routes ↔ Model Layer ↔ DB köprüsü</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#5–8 · MODEL LAYER</div>
+            <div class="god-name">ClaudeModel / DeepSeekModel / KimiModel / OllamaModel</div>
+            <div class="god-meta">models/ · her biri BaseModel'i implement eder</div>
+            <div class="god-edges">12 edge her biri · factory pattern ile erişilir</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#9 · FACTORY</div>
+            <div class="god-name">_build()</div>
+            <div class="god-meta">models/factory.py · model singleton fabrikası</div>
+            <div class="god-edges">12 edge — get_model() çağrılarının karşılığı</div>
+          </div>
+          <div class="god-card">
+            <div class="god-rank">#10 · DATA CONTRACT</div>
+            <div class="god-name">GenerateRequest</div>
+            <div class="god-meta">core/base_model.py · betweenness centrality 0.051</div>
+            <div class="god-edges">11 edge — API Routes ↔ Model Layer ↔ Schemas köprüsü</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gfy-pane" id="gfy-surprise">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Graphify'ın kod analizinden çıkardığı — manuel dokümantasyonda görünmeyen bağlantılar.</div>
+        <div class="surprise-list">
+          <div class="surprise-item">
+            <div class="surprise-conn">persona.js ──semantically_similar_to──▶ persona.html</div>
+            <div class="surprise-path">static/modules/persona.js → static/persona.html · İki bağımsız persona UI implementasyonu aynı analizi yapıyor.</div>
+            <span class="surprise-tag">INFERRED · semantically similar</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Tüm overlay modüller ──calls──▶ window.warpOpen (index.html)</div>
+            <div class="surprise-path">vault.js, persona.js, saglik.js, team.js, gorev.js → static/index.html · Her modül host sayfasındaki warpOpen'a bağımlı — index.html olmadan hiçbiri açılamaz.</div>
+            <span class="surprise-tag">EXTRACTED · gizli paylaşımlı bağımlılık</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">analyze() ──shares_data_with──▶ messages tablosu</div>
+            <div class="surprise-path">persona_engine.py → core/db.py · Persona Engine Soul API'yi bypass ederek doğrudan theia.db'yi okur. Read-only mode.</div>
+            <span class="surprise-tag">INFERRED · doğrudan DB erişimi</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">POST /api/team/analyze ──▶ BACKEND YOK</div>
+            <div class="surprise-path">team.js bu endpoint'i çağırıyor ama routes.py'de tanımlı değil. Team modülü UI'da tam, backend tarafı eksik.</div>
+            <span class="surprise-tag">KNOWLEDGE GAP · todo</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">chat() ──HIGH BETWEENNESS──▶ 3 ayrı community köprüsü</div>
+            <div class="surprise-path">API Routes & Request Handling ↔ Model Layer & AST Nodes ↔ API Schemas & Daily Brief · chat() bu üç topluluğu birbirine bağlayan tek node — split candidate.</div>
+            <span class="surprise-tag">EXTRACTED · centrality 0.058</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gfy-pane" id="gfy-community">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Leiden clustering ile tespit edilen 25 kod topluluğu. Cohesion değeri yüksekse topluluk kendi içinde sıkı bağlı.</div>
+        <div class="comm-grid">
+          <div class="comm-card"><div class="comm-name">Model Layer & AST Nodes</div><div class="comm-nodes">27 node</div><div class="comm-coh">cohesion: 0.06 · BaseModel, generate(), tüm model sınıfları</div></div>
+          <div class="comm-card"><div class="comm-name">API Routes & Request Handling</div><div class="comm-nodes">38 node</div><div class="comm-coh">cohesion: 0.09 · routes.py tüm endpoint'leri, db.py</div></div>
+          <div class="comm-card"><div class="comm-name">Frontend API Contracts</div><div class="comm-nodes">23 node</div><div class="comm-coh">cohesion: 0.09 · hud.html, buildCtxHtml, endpoint tanımları</div></div>
+          <div class="comm-card"><div class="comm-name">Soul Portal UI</div><div class="comm-nodes">16 node</div><div class="comm-coh">cohesion: 0.17 · index.html, SOUL_API, warpOpen, matrix bg</div></div>
+          <div class="comm-card"><div class="comm-name">Görev Task Module</div><div class="comm-nodes">13 node</div><div class="comm-coh">cohesion: 0.26 · gorev.js tüm fonksiyonları, localStorage</div></div>
+          <div class="comm-card"><div class="comm-name">Sağlık Health Monitor</div><div class="comm-nodes">7 node</div><div class="comm-coh">cohesion: 0.19 · fetchSaglik, renderSg*, latency history</div></div>
+          <div class="comm-card"><div class="comm-name">Documentation & Architecture</div><div class="comm-nodes">14 node</div><div class="comm-coh">cohesion: 0.14 · CLAUDE.md, mimari HTML'ler, rationale'lar</div></div>
+          <div class="comm-card"><div class="comm-name">Team Agent Module</div><div class="comm-nodes">9 node</div><div class="comm-coh">cohesion: 0.23 · 5 ajan, 🎯 prefix, fetchTeamAnalysis</div></div>
+          <div class="comm-card"><div class="comm-name">Persona Engine (Backend)</div><div class="comm-nodes">11 node</div><div class="comm-coh">cohesion: 0.21 · analyze(), read-only, 5 boyut analiz</div></div>
+          <div class="comm-card"><div class="comm-name">App Bootstrap & Obsidian Bridge</div><div class="comm-nodes">11 node</div><div class="comm-coh">cohesion: 0.21 · main.py, obsidian_bridge.py, decay constants</div></div>
+          <div class="comm-card"><div class="comm-name">API Schemas & Daily Brief</div><div class="comm-nodes">11 node</div><div class="comm-coh">cohesion: 0.42 · Pydantic modeller, DailyBrief, SpeakRequest</div></div>
+          <div class="comm-card"><div class="comm-name">Persona Frontend Module</div><div class="comm-nodes">8 node</div><div class="comm-coh">cohesion: 0.31 · buildPHeatmap, fetchPersona, PDEMO fallback</div></div>
+          <div class="comm-card"><div class="comm-name">Theia System Prompt</div><div class="comm-nodes">4 node</div><div class="comm-coh">cohesion: 0.50 · _BASE, _WEB_SUFFIX, build_system()</div></div>
+          <div class="comm-card"><div class="comm-name">SSE Chat Stream</div><div class="comm-nodes">2 node</div><div class="comm-coh">cohesion: 1.0 · /api/chat/stream, sendMessage streaming</div></div>
+          <div class="comm-card"><div class="comm-name">Backcore ESP32 Concept</div><div class="comm-nodes">1 node</div><div class="comm-coh">cohesion: 1.0 · tasarım aşamasında, bağlantısız</div></div>
+        </div>
+      </div>
+
+      <div class="gfy-pane" id="gfy-hyperedge">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Graphify'ın tespit ettiği grup ilişkileri — ikiden fazla node'u birden bağlayan örüntüler.</div>
+        <div class="surprise-list">
+          <div class="surprise-item">
+            <div class="surprise-conn">Chat Request Pipeline</div>
+            <div class="surprise-path">routes_chat → factory_get_model → db_add_message → routes_build_system → theia_soul_build_system</div>
+            <span class="surprise-tag">EXTRACTED · confidence 0.95</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Multi-Provider Model Factory</div>
+            <div class="surprise-path">factory_get_model → base_model → ClaudeModel → DeepSeekModel → KimiModel → OllamaModel</div>
+            <span class="surprise-tag">EXTRACTED · confidence 0.95</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Scout Memory Decay Cycle</div>
+            <div class="surprise-path">obsidian_bridge_check → decay_constants → scout_status_states → routes_scout_patch → db_memory_table</div>
+            <span class="surprise-tag">INFERRED · confidence 0.85</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Tüm Overlay Modüller · Paylaşımlı Pattern</div>
+            <div class="surprise-path">vault.js + saglik.js + persona.js + team.js + gorev.js → window.warpOpen/warpClose + SOUL_API sabiti</div>
+            <span class="surprise-tag">INFERRED · confidence 0.90</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Persona Analysis Pipeline</div>
+            <div class="surprise-path">persona.js → fetchPersona() → /api/persona/snapshot → persona_engine.analyze() → persona.html</div>
+            <span class="surprise-tag">EXTRACTED · confidence 1.00</span>
+          </div>
+          <div class="surprise-item">
+            <div class="surprise-conn">Üç Katman Context Fusion</div>
+            <div class="surprise-path">soul_ctx + memory_ctx + web_ctx → build_system() → Claude sistem prompt'u</div>
+            <span class="surprise-tag">EXTRACTED · confidence 0.95</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 — HAFIZA RETRIEVAL -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">03</span>Hafıza Retrieval Mimarisi</div>
+    <div class="retrieval-box">
+      <div class="retrieval-intro">Her Telegram mesajında Claude'un sistem prompt'u iki bağımsız katmandan beslenir. Paralel çalışırlar, birbirleriyle çakışmazlar. Her ikisi de null-safe: biri düşse diğeri çalışmaya devam eder.</div>
+      <div class="retrieval-grid">
+        <div class="ret-col">
+          <div class="ret-layer soul">
+            <div class="rl-title">soul_agent · Sabit Zemin</div>
+            <div class="rl-sub">Kaynak: theia-soul → theia.db</div>
+            <div class="rl-sub">Ne çeker: <code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">core_identity</code> + en son <code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">daily_summary</code></div>
+            <div class="rl-sub">Nasıl: GET /api/memory, 5dk in-memory cache</div>
+            <div class="rl-sub" style="margin-top:6px;">Amaç: "Sen kimsin, bugün ne oldu" — her mesajda aynı temel bağlam</div>
+          </div>
+          <div class="ret-layer memory">
+            <div class="rl-title">memory_agent · Dinamik Bağlam</div>
+            <div class="rl-sub">Kaynak: theia → vault_api → FTS</div>
+            <div class="rl-sub">Ne çeker: Mesajla ilgili vault kayıtları (limit: 5 entry)</div>
+            <div class="rl-sub">Nasıl: <code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">search_entries(query)</code> → topic özetleri + entry önizlemesi</div>
+            <div class="rl-sub" style="margin-top:6px;">Amaç: "Bu mesajla ilgili geçmişte ne var" — sorgu bağımlı</div>
+          </div>
+        </div>
+        <div class="ret-plus">+</div>
+        <div class="ret-col">
+          <div class="ret-layer result">
+            <div class="rl-title">Claude Sistem Prompt'u</div>
+            <div class="rl-sub"><code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">soul_ctx</code> → kim olduğun, günün özeti</div>
+            <div class="rl-sub"><code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">memory_ctx</code> → ilgili vault geçmişi (FTS)</div>
+            <div class="rl-sub"><code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;">web_ctx</code> → 🌍 prefix ile web arama sonucu</div>
+            <div class="rl-sub" style="margin-top:6px; color:rgba(124,110,245,0.9);">Üçü birleşerek tek sistem prompt'u oluşturur</div>
+          </div>
+          <div class="ret-layer ok">
+            <div class="rl-title">Fallback Davranışı</div>
+            <div class="rl-sub">soul_agent: Soul down → boş string, graceful</div>
+            <div class="rl-sub">memory_agent: hata → boş string, exception log</div>
+            <div class="rl-sub">web_agent: sadece 🌍 prefix ile tetiklenir</div>
+            <div class="rl-sub" style="margin-top:6px;">Team agent: 🎯 prefix → arka planda /api/team/analyze</div>
+          </div>
+        </div>
+      </div>
+      <div class="ret-note">
+        Soul HUD (index.html) ise Soul API'nin kendi <code>_build_system()</code>'ini kullanır — soul_agent bypass edilir, DB'den doğrudan memory çekilir. Telegram bot ve HUD farklı context inşa yolu kullanır.
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 — VAULT -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">04</span>Vault Yapısı · TheiaMemory</div>
+    <div class="vault-grid">
+      <div>
+        <div class="vault-intro"><code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px;">System/</code> klasörü bridge'in okuma hedefi. Buraya yazılan her <code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px;">.md</code> dosyası 15 dakika içinde Soul DB'ye girer.</div>
+        <div class="vault-tree">
+          <span class="vt-root">~/TheiaMemory/</span><br>
+          ├── <span class="vt-dir">System/</span> <span class="vt-note">← bridge okuma hedefi</span><br>
+          │&nbsp;&nbsp; ├── <span class="vt-active">core_identity.md</span> <span class="vt-note">→ theia.db [core]</span><br>
+          │&nbsp;&nbsp; └── <span class="vt-muted">*.md</span> <span class="vt-note">→ theia.db [memory]</span><br>
+          ├── <span class="vt-dir">Daily/</span> <span class="vt-note">günlük notlar</span><br>
+          ├── <span class="vt-dir">Projeler/</span> <span class="vt-note">proje bazlı notlar</span><br>
+          ├── <span class="vt-dir">Kişisel/</span><br>
+          ├── <span class="vt-dir">Inspiration/</span><br>
+          └── <span class="vt-dir">Inbox/</span> <span class="vt-note">işlenmemiş giriş</span>
+        </div>
+      </div>
+      <div>
+        <div class="vault-intro">Soul DB'deki <code style="color:var(--gold);background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px;">memory</code> tablosu. Scout decay: 30 gün sessiz → passive, 90 gün → archived. Günlük özetler UNIQUE kısıtı sayesinde aynı güne yazar.</div>
+        <div class="vault-tree">
+          <span class="vt-root">theia.db · memory tablosu</span><br>
+          <br>
+          <span style="color:var(--teal);">core_identity</span> entry_type=<span class="vt-active">core</span><br>
+          <span class="vt-note">&nbsp; Kaptan kimliği, projeler, felsefe</span><br>
+          <span class="vt-note">&nbsp; soul_agent her mesajda çeker</span><br>
+          <br>
+          <span style="color:var(--orange);">daily_YYYY-MM-DD</span> entry_type=<span style="color:var(--orange);">daily_summary</span><br>
+          <span class="vt-note">&nbsp; theia-brief alias'ından · UNIQUE</span><br>
+          <span class="vt-note">&nbsp; soul_agent en güncel olanı çeker</span><br>
+          <br>
+          <span class="vt-muted">Scout decay:</span><br>
+          <span class="vt-note">&nbsp; 30 gün sessiz → passive</span><br>
+          <span class="vt-note">&nbsp; 90 gün sessiz → archived</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 — BİLEŞENLER -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">05</span>Bileşenler</div>
+    <div class="cards">
+      <div class="card" style="--cc:#4FA8D5">
+        <div class="card-head"><div class="card-title">Telegram Bot · Theia Guard</div><div class="card-tag on">UP</div></div>
+        <div class="card-body">Ana konuşma yüzeyi. <code>handlers/message.py</code> → <strong>soul_ctx + memory_ctx + web_ctx</strong> paralel alınır, gatekeeper'dan geçer, Claude'a gönderilir. Dakikada bir <code>minute_job</code> çalışır.</div>
+        <div class="card-meta">path: <code>/home/ismail/theia/main.py</code><br>servis: <code>theia.service</code><br>restart: <code>sudo systemctl restart theia</code></div>
+      </div>
+      <div class="card" style="--cc:#E85D24">
+        <div class="card-head"><div class="card-title">Gatekeeper</div><div class="card-tag on">v2.3</div></div>
+        <div class="card-body">4 kademeli risk sınıflandırıcı: <strong>LOW / MEDIUM / HIGH / CRITICAL</strong>. Injection tespiti, Telegram onay akışı, audit log. LLM'e gitmeden önce her mesajı filtreler.</div>
+        <div class="card-meta">path: <code>theia/gatekeeper.py</code><br>risk levels: LOW → CRITICAL<br>audit: <code>gatekeeper.log</code></div>
+      </div>
+      <div class="card" style="--cc:#7C6EF5">
+        <div class="card-head"><div class="card-title">Soul · FastAPI</div><div class="card-tag on">UP · 3 GÜN</div></div>
+        <div class="card-body">Ana çekirdek. SQLite üstüne hafıza, oturum, mesaj yönetimi. <strong>Çoklu model fabrikası</strong>: Claude / DeepSeek / Kimi / Ollama. Tüm modüller bu servis üzerinden çalışır.</div>
+        <div class="card-meta">path: <code>/home/ismail/theia-soul/</code><br>port: <code>:8000</code> · db: <code>memory/theia.db</code><br>restart: <code>sudo systemctl restart theia-soul</code></div>
+      </div>
+      <div class="card" style="--cc:#C77DFF">
+        <div class="card-head"><div class="card-title">Soul HUD · index.html</div><div class="card-tag on">UP</div></div>
+        <div class="card-body">Tarayıcı tabanlı tek sayfa uygulama. Graphify analizine göre <strong>god node #3</strong> — 14 edge ile tüm overlay modüllerin host'u. <code>window.warpOpen</code> gizli paylaşımlı bağımlılık.</div>
+        <div class="card-meta">path: <code>theia-soul/static/index.html</code><br>erişim: <code>100.115.79.121:8000</code><br>modüller: chat · vault · persona · sağlık · görev · team</div>
+      </div>
+      <div class="card" style="--cc:#2DD4BF">
+        <div class="card-head"><div class="card-title">Vault Modülü</div><div class="card-tag on">AKTİF</div></div>
+        <div class="card-body"><code>GET /api/memory</code> + <code>GET /api/scout/summary</code> paralel çeker. core/daily/memory tiplerini gösterir, Scout decay durumunu raporlar. warpOpen ile açılır.</div>
+        <div class="card-meta">path: <code>static/modules/vault.js</code><br>api: <code>/api/memory · /api/scout/summary</code></div>
+      </div>
+      <div class="card" style="--cc:#EF9F27">
+        <div class="card-head"><div class="card-title">Görev Modülü</div><div class="card-tag on">AKTİF</div></div>
+        <div class="card-body">Liste / Takvim / Arşiv sekmeleri. Modal ile yeni görev ekleme (başlık/tarih/saat/tekrar/kategori/tür). <code>soul.db</code>'deki <code>gorevler</code> tablosuna bağlı. Soul API üzerinden CRUD.</div>
+        <div class="card-meta">path: <code>static/modules/gorev.js</code><br>db: <code>soul.db · gorevler tablosu</code><br>api: <code>GET/POST /api/gorev · PATCH /api/gorev/{id}/done</code></div>
+      </div>
+      <div class="card" style="--cc:#1D9E75">
+        <div class="card-head"><div class="card-title">Sağlık Modülü</div><div class="card-tag on">AKTİF</div></div>
+        <div class="card-body"><code>GET /api/health</code> ile tüm servisleri probe eder. Latency sparkline geçmişi tutar. ok/degraded/offline gösterimi. Refresh butonu ile manuel yenileme.</div>
+        <div class="card-meta">path: <code>static/modules/saglik.js</code><br>api: <code>/api/health + endpoint probe</code><br>servisler: soul · claude · deepseek · memory · scout · persona</div>
+      </div>
+      <div class="card" style="--cc:#7C6EF5">
+        <div class="card-head"><div class="card-title">Persona Engine</div><div class="card-tag on">v1.0 · UP</div></div>
+        <div class="card-body"><code>messages</code> tablosundan read-only analiz. <strong>5 boyut:</strong> frekans (uni/bi/trigram), zaman örüntüsü (heatmap), uzunluk oranı, oturum profili, token sarfiyatı. DB'ye hiç yazmaz.</div>
+        <div class="card-meta">path: <code>persona_engine.py + api/persona.py</code><br>api: <code>/api/persona/snapshot?window=all|7d|30d</code><br>ui: <code>/persona</code></div>
+      </div>
+      <div class="card" style="--cc:#E8B86D">
+        <div class="card-head"><div class="card-title">Team · Bilişsel Mercek</div><div class="card-tag warn">BACKEND EKSİK</div></div>
+        <div class="card-body">5 ajan: <strong>Mimar / Tarihçi / Antitez / Toplumcu / Stratejist</strong>. <code>🎯</code> prefix ile tetiklenir. UI tamamdır. Backend: <code>POST /api/team/analyze</code> routes.py'de henüz yok.</div>
+        <div class="card-meta">path: <code>static/modules/team.js</code><br>prefix: <code>🎯</code> → arka planda analiz<br>todo: <code>/api/team/analyze</code> endpoint'i yazılacak</div>
+      </div>
+      <div class="card" style="--cc:#1D9E75">
+        <div class="card-head"><div class="card-title">Obsidian Bridge</div><div class="card-tag on">CRON 15dk</div></div>
+        <div class="card-body"><code>TheiaMemory/System/*.md</code> dosyalarını okur, Soul API'ye PUT eder. Scout decay kontrolünü tetikler. Her çalışmada 30/90 gün kuralını uygular.</div>
+        <div class="card-meta">path: <code>theia-soul/obsidian_bridge.py</code><br>kaynak: <code>~/TheiaMemory/System/</code><br>cron: <code>*/15 * * * *</code> · log: <code>bridge.log</code></div>
+      </div>
+      <div class="card" style="--cc:#E8B86D">
+        <div class="card-head"><div class="card-title">Scout · Decay Motoru</div><div class="card-tag on">OTOMATİK</div></div>
+        <div class="card-body">Hafıza kayıtlarının yaşını izler. Son güncellenme tarihine göre statü atar. İnsan belleğini taklit eden decay — aktif olmayan hafıza kendiliğinden solar.</div>
+        <div class="card-meta">30 gün sessiz → <code>passive</code><br>90 gün sessiz → <code>archived</code><br>endpoint: <code>GET /api/scout/summary</code></div>
+      </div>
+      <div class="card" style="--cc:#EF9F27">
+        <div class="card-head"><div class="card-title">theia.db · SQLite</div><div class="card-tag on">AKTİF</div></div>
+        <div class="card-body">3 tablo: <code>memory</code>, <code>sessions</code>, <code>messages</code>. memory tablosunda <code>entry_type</code> (core/memory/daily_summary) ve Scout tarafından yönetilen <code>status</code> var. Graphify god node #1 <code>get_db()</code> buraya bağlı.</div>
+        <div class="card-meta">path: <code>~/theia-soul/memory/theia.db</code><br>get_db(): <code>17 edge · en bağlantılı node</code></div>
+      </div>
+      <div class="card" style="--cc:#7C6EF5">
+        <div class="card-head"><div class="card-title">Claude Sonnet</div><div class="card-tag on">VARSAYILAN</div></div>
+        <div class="card-body">Asıl LLM. Hem Telegram bot hem Soul HUD varsayılanı. soul_ctx + memory_ctx + web_ctx sistem prompt'unda birleşir. Soul model fabrikasından seçilebilir.</div>
+        <div class="card-meta">model: <code>claude-sonnet-4-6</code><br>factory: <code>get_model("claude")</code><br>singleton cache: her model bir kez oluşturulur</div>
+      </div>
+      <div class="card" style="--cc:#1D9E75">
+        <div class="card-head"><div class="card-title">Ollama · Lokal LLM</div><div class="card-tag on">32GB RAM</div></div>
+        <div class="card-body">Soul model fabrikasından çağrılabilir alternatif. 32GB RAM ile artık gerçek anlamda kullanılabilir. Theia personality Modelfile ile özelleştirilebilir.</div>
+        <div class="card-meta">host: <code>127.0.0.1:11434</code><br>model: <code>llama3 (varsayılan)</code><br>factory: <code>get_model("ollama")</code></div>
+      </div>
+      <div class="card" style="--cc:#E8B86D">
+        <div class="card-head"><div class="card-title">Termux · theia-brief</div><div class="card-tag on">UP</div></div>
+        <div class="card-body">Telefondan tek komutla günlük özet gönderimi. jq ile JSON kurar, Tailscale üstünden Soul'a curl atar. Akşam ritüeli için tasarlandı.</div>
+        <div class="card-meta">alias: <code>~/.bashrc</code> · Redmi Note 15 Pro<br>hedef: <code>100.115.79.121:8000/api/soul/daily</code><br>bağımlılık: <code>jq</code></div>
+      </div>
+      <div class="card" style="--cc:#4FA8D5; opacity:0.7;">
+        <div class="card-head"><div class="card-title">Theia APK · Capacitor</div><div class="card-tag warn">IP SORUNU</div></div>
+        <div class="card-body">Android native uygulama. STT/TTS Capacitor native ile çalışıyor. Sorun: APK içindeki <code>SOUL_API</code> sabiti yanlış adres çekiyor, API'ye ulaşamıyor.</div>
+        <div class="card-meta">todo: <code>SOUL_API</code> sabitini güncelle<br>todo: <code>capacitor.config.ts allowNavigation</code> güncelle<br>build: <code>gradlew assembleDebug</code></div>
+      </div>
+      <div class="card" style="--cc:#4FA8D5; opacity:0.6;">
+        <div class="card-head"><div class="card-title">Backcore</div><div class="card-tag" style="border-color:rgba(79,168,213,0.3);color:var(--blue);">CONCEPT</div></div>
+        <div class="card-body">Manyetik AMOLED arka panel cihazı. ESP32-S3 + MEMS mikrofon ile wake-word algılama. Telefon arkasına yapışır, Termux'a BT/Wi-Fi bridge ile bağlanır.</div>
+        <div class="card-meta">MCU: <code>ESP32-S3</code> · ses: <code>MEMS mikrofon</code><br>durum: tasarım aşamasında · Graphify'da izole node</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 — TIMELINE -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">06</span>2026.05 · İlerleme Kaydı</div>
+    <div class="timeline">
+      <div class="tl-item done"><div class="tl-text">Soul DB schema doğrulandı — <code>memory</code> tablosu tüm kolonlarıyla canlı</div></div>
+      <div class="tl-item done"><div class="tl-text"><code>POST /api/soul/daily</code> endpoint'i yazıldı · <code>theia-brief</code> alias'ı Termux'ta aktif</div></div>
+      <div class="tl-item done"><div class="tl-text"><code>core_identity.md</code> oluşturuldu, bridge üzerinden Soul DB'ye geçti — <code>entry_type: core</code> doğrulandı</div></div>
+      <div class="tl-item done"><div class="tl-text">Telegram bot soul_ctx ile entegre edildi — bot Kaptan kimliğini ve günlük özeti tanıyor</div></div>
+      <div class="tl-item done"><div class="tl-text"><code>gatekeeper.py</code> v2.3 aktif — 4 kademeli risk sınıflandırma, injection detection, audit log</div></div>
+      <div class="tl-item done"><div class="tl-text">Redmi Note 15 Pro kurulumu — Termux + Python/Git + theia-brief çalışıyor</div></div>
+      <div class="tl-item done"><div class="tl-text"><code>persona_engine.py</code> yazıldı — 5 boyut analiz, read-only mod, DB'ye sıfır yazma</div></div>
+      <div class="tl-item done"><div class="tl-text"><code>/api/persona/snapshot</code> endpoint'i canlı · <code>/persona</code> HTML sayfası yayında</div></div>
+      <div class="tl-item done"><div class="tl-text">Soul HUD modüler yapıya geçirildi — vault/persona/saglik/gorev/team ayrı JS modülleri</div></div>
+      <div class="tl-item done"><div class="tl-text">Görev modülü tamamlandı — <code>soul.db</code> bağlı, liste/takvim/arşiv sekmeleri çalışıyor</div></div>
+      <div class="tl-item done"><div class="tl-text">Team · Bilişsel Mercek UI tamamlandı — 5 ajan, 🎯 prefix handler aktif</div></div>
+      <div class="tl-item done"><div class="tl-text">Laptop: 32GB RAM yükseltme + batarya değişimi + BIOS pili temizlendi</div></div>
+      <div class="tl-item done"><div class="tl-text">Graphify kuruldu ve çalıştırıldı — 267 node, 429 edge, 25 community, 38.7x token reduction</div></div>
+      <div class="tl-item done"><div class="tl-text">CLAUDE.md + README.md sıfırdan yeniden yazıldı — gerçek koda dayalı, uydurma yok</div></div>
+      <div class="tl-item done"><div class="tl-text">GitHub repo güncellendi — tüm modüller, mimari dosyalar push'landı</div></div>
+      <div class="tl-item partial"><div class="tl-text">Theia APK — STT/TTS çalışıyor, API bağlantısı (Failed to fetch) hâlâ çözülmedi</div></div>
+      <div class="tl-item todo"><div class="tl-text"><code>POST /api/team/analyze</code> backend endpoint'i yazılacak — Team modülü tamamlanacak</div></div>
+      <div class="tl-item todo"><div class="tl-text">Görüntü analizi modülü — screenshot → Claude analizi, laptop tarafında</div></div>
+      <div class="tl-item todo"><div class="tl-text">WhatsApp mesaj — sesli komutla kişiye mesaj gönderme</div></div>
+      <div class="tl-item todo"><div class="tl-text">YouTube modülü — kanal istatistikleri + sesli komutla şarkı açma</div></div>
+      <div class="tl-item todo"><div class="tl-text">Google Calendar entegrasyonu — görev modülüyle birleşik, sesli komutla ekleme</div></div>
+      <div class="tl-item todo"><div class="tl-text">APK IP sorunu çözülecek — <code>SOUL_API</code> sabiti + <code>capacitor.config.ts</code> güncellemesi</div></div>
+      <div class="tl-item todo"><div class="tl-text">Backcore ESP32-S3 prototip — wake-word pipeline, BT/Wi-Fi bridge tasarımı</div></div>
+    </div>
+  </div>
+
+  <!-- 07 — PERSONA SNAPSHOT -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">07</span>Persona Snapshot · 2026.05.15</div>
+    <div class="persona-snap">
+      <div class="persona-snap-head">
+        <div class="persona-snap-title">/api/persona/snapshot?window=all</div>
+        <div class="persona-snap-time">2026-05-15 · 334 mesaj · 06 May–15 May penceresi · read-only</div>
+      </div>
+      <div class="persona-snap-grid">
+        <div class="persona-snap-stat" style="--snc:var(--purple);">
+          <div class="ps-val">Per 02:00</div>
+          <div class="ps-lab">peak saat</div>
+        </div>
+        <div class="persona-snap-stat" style="--snc:var(--teal);">
+          <div class="ps-val">334</div>
+          <div class="ps-lab">toplam mesaj</div>
+        </div>
+        <div class="persona-snap-stat" style="--snc:var(--orange);">
+          <div class="ps-val">167</div>
+          <div class="ps-lab">kullanıcı mesajı</div>
+        </div>
+        <div class="persona-snap-stat" style="--snc:var(--gold);">
+          <div class="ps-val">api</div>
+          <div class="ps-lab">top unigram</div>
+        </div>
+        <div class="persona-snap-stat" style="--snc:var(--green);">
+          <div class="ps-val">10 gün</div>
+          <div class="ps-lab">analiz penceresi</div>
+        </div>
+      </div>
+      <div class="persona-snap-quote">
+        <span class="psq-label">Top unigram'lar · Konuşma içeriğinin özü</span>
+        <em>api (27) · test (26) · hafıza (23) · sistem (22) · çalışır (16) · katmanı (15) · prompt (13)</em> — inşa eden, test eden, hafızayı yöneten bir Kaptan portresi.
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 — KOMUT REF -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">08</span>Komut Referansı</div>
+    <div class="cmd-strip">
+<span class="comment"># servis durumu</span><br>
+<span class="prompt">$</span> <span class="cmd">sudo systemctl status theia theia-soul --no-pager</span><br>
+<br>
+<span class="comment"># restart</span><br>
+<span class="prompt">$</span> <span class="cmd">sudo systemctl restart theia</span>           <span class="comment"># Telegram bot</span><br>
+<span class="prompt">$</span> <span class="cmd">sudo systemctl restart theia-soul</span>      <span class="comment"># Soul API</span><br>
+<br>
+<span class="comment"># DB inspect</span><br>
+<span class="prompt">$</span> <span class="cmd">sqlite3 ~/theia-soul/memory/theia.db "SELECT key, entry_type, status FROM memory;"</span><br>
+<span class="prompt">$</span> <span class="cmd">sqlite3 ~/theia-soul/soul.db "SELECT * FROM gorevler WHERE done=0;"</span><br>
+<br>
+<span class="comment"># bridge</span><br>
+<span class="prompt">$</span> <span class="cmd">python3 ~/theia-soul/obsidian_bridge.py</span><br>
+<span class="prompt">$</span> <span class="cmd">tail -f ~/theia-soul/bridge.log</span><br>
+<br>
+<span class="comment"># API test</span><br>
+<span class="prompt">$</span> <span class="cmd">curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool</span><br>
+<span class="prompt">$</span> <span class="cmd">curl -s http://127.0.0.1:8000/api/scout/summary | python3 -m json.tool</span><br>
+<span class="prompt">$</span> <span class="cmd">curl -s "http://127.0.0.1:8000/api/persona/snapshot?window=all" | python3 -m json.tool | head -30</span><br>
+<span class="prompt">$</span> <span class="cmd">curl -s http://127.0.0.1:8000/api/gorev | python3 -m json.tool</span><br>
+<br>
+<span class="comment"># Graphify</span><br>
+<span class="prompt">$</span> <span class="cmd">cd ~/theia-soul && claude</span>              <span class="comment"># Claude Code'u aç</span><br>
+<span class="prompt">&gt;</span> <span class="cmd">/graphify .</span>                             <span class="comment"># graf yeniden üret</span><br>
+<span class="prompt">$</span> <span class="cmd">graphify query "get_db neden bu kadar merkezi?"</span><br>
+<br>
+<span class="comment"># gatekeeper log</span><br>
+<span class="prompt">$</span> <span class="cmd">tail -f ~/theia/gatekeeper.log</span><br>
+<br>
+<span class="comment"># APK build</span><br>
+<span class="prompt">$</span> <span class="cmd">cp ~/theia-soul/static/index.html ~/theia-app/www/index.html</span><br>
+<span class="prompt">$</span> <span class="cmd">cd ~/theia-app && npx cap sync android && cd android && ./gradlew assembleDebug --no-daemon</span>
+    </div>
+  </div>
+
+  <!-- 09 — KRİTİK DOSYA İÇERİKLERİ -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">09</span>Kritik Dosya İçerikleri · İskelet</div>
+    <div class="tab-switcher">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="gatekeeper">gatekeeper.py</button>
+        <button class="tab-btn" data-tab="routes">routes.py · chat()</button>
+        <button class="tab-btn" data-tab="bridge">obsidian_bridge.py</button>
+        <button class="tab-btn" data-tab="theia_soul">theia_soul.py</button>
+        <button class="tab-btn" data-tab="factory">factory.py</button>
+      </div>
+
+      <div class="tab-pane active" id="tab-gatekeeper">
+        <div class="code-block-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          <pre class="code-block"><span class="cm"># gatekeeper.py — v2.3 · Risk Sınıflandırıcı</span>
+
+<span class="kw">class</span> <span class="cls">RiskLevel</span>(Enum):
+    LOW      = <span class="num">1</span>   <span class="cm"># Normal mesaj → geç</span>
+    MEDIUM   = <span class="num">2</span>   <span class="cm"># Şüpheli → logla, geç</span>
+    HIGH     = <span class="num">3</span>   <span class="cm"># Telegram onayı iste</span>
+    CRITICAL = <span class="num">4</span>   <span class="cm"># Blokla</span>
+
+INJECTION_PATTERNS = [
+    <span class="str">r"ignore previous instructions"</span>,
+    <span class="str">r"you are now (a|an|the)"</span>,
+    <span class="str">r"jailbreak"</span>,
+    <span class="str">r"DAN mode"</span>,
+    <span class="str">r"system prompt"</span>,
+]
+
+<span class="kw">async def</span> <span class="fn">gate</span>(bot, chat_id, message) -> tuple[bool, RiskLevel]:
+    risk = <span class="fn">classify_risk</span>(message)
+    <span class="kw">if</span> risk == RiskLevel.CRITICAL: <span class="kw">return</span> <span class="num">False</span>, risk
+    <span class="kw">if</span> risk == RiskLevel.HIGH:     <span class="kw">return</span> <span class="kw">await</span> <span class="fn">request_approval</span>(...), risk
+    <span class="kw">return</span> <span class="num">True</span>, risk  <span class="cm"># LOW/MEDIUM → geç</span></pre>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-routes">
+        <div class="code-block-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          <pre class="code-block"><span class="cm"># api/routes.py — chat() · God Node #4 · betweenness 0.058</span>
+<span class="cm"># API Routes ↔ Model Layer ↔ DB arasında köprü</span>
+
+<span class="dec">@router.post</span>(<span class="str">"/chat"</span>, response_model=ChatResponse)
+<span class="kw">async def</span> <span class="fn">chat</span>(req: ChatRequest):
+    model = factory.<span class="fn">get_model</span>(req.model)       <span class="cm"># model fabrikası</span>
+    history = <span class="kw">await</span> db.<span class="fn">get_messages</span>(req.session_id)
+    <span class="kw">if not</span> history:
+        <span class="kw">await</span> db.<span class="fn">create_session</span>(req.session_id, model.model_id)
+
+    messages = [Message(role=m[<span class="str">"role"</span>], content=m[<span class="str">"content"</span>]) <span class="kw">for</span> m <span class="kw">in</span> history]
+    messages.append(Message(role=<span class="str">"user"</span>, content=req.message))
+
+    gen_req = GenerateRequest(               <span class="cm"># God Node #10 · betweenness 0.051</span>
+        messages=messages,
+        system=<span class="kw">await</span> <span class="fn">_build_system</span>(req.system),
+        max_tokens=req.max_tokens,
+    )
+    response = <span class="kw">await</span> model.<span class="fn">generate</span>(gen_req)
+
+    <span class="kw">await</span> db.<span class="fn">add_message</span>(req.session_id, <span class="str">"user"</span>, req.message)
+    <span class="kw">await</span> db.<span class="fn">add_message</span>(req.session_id, <span class="str">"assistant"</span>, response.content)
+    <span class="kw">return</span> <span class="cls">ChatResponse</span>(...)
+
+<span class="kw">async def</span> <span class="fn">_build_system</span>(req_system):
+    <span class="kw">if</span> req_system <span class="kw">is not None</span>: <span class="kw">return</span> req_system  <span class="cm"># override</span>
+    entries = <span class="kw">await</span> db.<span class="fn">list_memory</span>()
+    user_memory = <span class="str">"\n"</span>.join(<span class="str">f"{e['key']}: {e['value']}"</span> <span class="kw">for</span> e <span class="kw">in</span> entries)
+    <span class="kw">return</span> _theia_system.<span class="fn">build_system</span>(user_memory=user_memory)</pre>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-bridge">
+        <div class="code-block-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          <pre class="code-block"><span class="cm"># obsidian_bridge.py — Obsidian → Soul DB Köprüsü</span>
+<span class="cm"># cron: */15 * * * * · bridge.log'a yazar</span>
+
+THEIA_MEMORY_DIR = Path.home() / <span class="str">"TheiaMemory"</span> / <span class="str">"System"</span>
+THEIA_URL = <span class="str">"http://127.0.0.1:8000"</span>
+PASSIVE_DAYS = <span class="num">30</span>
+ARCHIVED_DAYS = <span class="num">90</span>
+
+<span class="kw">def</span> <span class="fn">send_to_soul</span>(key, value, entry_type=<span class="str">"memory"</span>):
+    <span class="cm"># PUT /api/memory/{key}</span>
+    r = requests.<span class="fn">put</span>(<span class="str">f"{THEIA_URL}/api/memory/{key}"</span>, json={...})
+    <span class="kw">return</span> r.status_code
+
+<span class="kw">def</span> <span class="fn">check_and_update_status</span>(key, updated_at_str):
+    delta = now - updated_at
+    <span class="kw">if</span> delta > timedelta(days=ARCHIVED_DAYS):
+        <span class="fn">update_status</span>(key, <span class="str">"archived"</span>)   <span class="cm"># 90 gün sessiz</span>
+    <span class="kw">elif</span> delta > timedelta(days=PASSIVE_DAYS):
+        <span class="fn">update_status</span>(key, <span class="str">"passive"</span>)    <span class="cm"># 30 gün sessiz</span></pre>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-theia_soul">
+        <div class="code-block-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          <pre class="code-block"><span class="cm"># core/theia_soul.py — Theia Kimliği · Sistem Promptu</span>
+<span class="cm"># Graphify Community: "Theia System Prompt" · cohesion 0.50</span>
+
+_BASE = <span class="str">"""
+Sen THEIA'sın — Kaptan İsmail Karabulut'un dijital düşünce ortağı.
+Saygılı ve dürüstsün. Challenge edersin. Harekete geçirirsin.
+'Kaptan' veya 'Efendim' ile hitap edersin.
+"""</span>
+
+_WEB_SUFFIX = <span class="str">"""
+## Web Arama Sonuçları
+🌍 prefix ile tetiklenir. Doğrudan özet ver, kaynak listesi yapma.
+"""</span>
+
+<span class="kw">def</span> <span class="fn">build_system</span>(*, web=False, vault_context=<span class="str">""</span>, web_context=<span class="str">""</span>, user_memory=<span class="str">""</span>) -> str:
+    now = datetime.now().<span class="fn">strftime</span>(<span class="str">"%Y-%m-%d %H:%M"</span>)
+    text = _BASE + (_WEB_SUFFIX <span class="kw">if</span> web <span class="kw">else</span> <span class="str">""</span>)
+    text += <span class="str">f"\n\nŞu anki tarih ve saat: {now} (UTC+3)"</span>
+    <span class="kw">if</span> user_memory:
+        text += <span class="str">f"\n\nKullanıcı hafızası:\n{user_memory}"</span>
+    <span class="kw">if</span> vault_context: text += <span class="str">f"\n\n{vault_context}"</span>
+    <span class="kw">if</span> web_context:   text += <span class="str">f"\n\n{web_context}"</span>
+    <span class="kw">return</span> text</pre>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-factory">
+        <div class="code-block-wrap">
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          <pre class="code-block"><span class="cm"># models/factory.py — Çoklu Model Fabrikası</span>
+<span class="cm"># Graphify: _build() god node #6 · 12 edge</span>
+
+_registry: dict[str, BaseModel] = {}  <span class="cm"># singleton cache</span>
+
+<span class="kw">def</span> <span class="fn">get_model</span>(name: str | None = None) -> BaseModel:
+    key = (name <span class="kw">or</span> config.DEFAULT_MODEL).lower()
+    <span class="kw">if</span> key <span class="kw">not in</span> _registry:
+        _registry[key] = <span class="fn">_build</span>(key)
+    <span class="kw">return</span> _registry[key]
+
+<span class="kw">def</span> <span class="fn">_build</span>(key: str) -> BaseModel:
+    <span class="kw">if</span> key == <span class="str">"claude"</span>:    <span class="kw">return</span> <span class="cls">ClaudeModel</span>(model_id=config.CLAUDE_MODEL_ID, ...)
+    <span class="kw">if</span> key == <span class="str">"deepseek"</span>: <span class="kw">return</span> <span class="cls">DeepSeekModel</span>(model_id=config.DEEPSEEK_MODEL_ID, ...)
+    <span class="kw">if</span> key == <span class="str">"kimi"</span>:     <span class="kw">return</span> <span class="cls">KimiModel</span>(model_id=config.KIMI_MODEL_ID, ...)
+    <span class="kw">if</span> key == <span class="str">"ollama"</span>:   <span class="kw">return</span> <span class="cls">OllamaModel</span>(model_id=config.OLLAMA_MODEL_ID, ...)
+    <span class="kw">raise</span> <span class="cls">ValueError</span>(<span class="str">f"Bilinmeyen model: {key}"</span>)
+
+<span class="cm"># Kullanım:</span>
+<span class="cm"># model = get_model("claude")    → ClaudeModel singleton</span>
+<span class="cm"># model = get_model("ollama")    → OllamaModel singleton (32GB RAM ile artık tam kapasite)</span>
+<span class="cm"># model = get_model()            → DEFAULT_MODEL (.env'den)</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 — MİMARİ KATMANLAR -->
+  <div class="section">
+    <div class="sec-title"><span class="sec-num">10</span>Mimari Katmanlar · Veri Akış Yönü</div>
+    <div class="layer-stack" id="layer-stack">
+      <div class="layer-item" style="--lc:#C77DFF;" data-delay="0">
+        <div class="layer-accent"></div>
+        <div class="layer-body">
+          <div class="layer-name">Kullanıcı Yüzeyi</div>
+          <div class="layer-pills">
+            <span class="layer-pill">Telegram · theia.service</span>
+            <span class="layer-pill">Soul HUD · :8000</span>
+            <span class="layer-pill">theia-brief · Termux</span>
+            <span class="layer-pill">Redmi Note 15 Pro</span>
+            <span class="layer-pill" style="border-color:rgba(239,159,39,0.4);color:var(--orange);">Theia APK · IP sorunu</span>
+            <span class="layer-pill planned">Backcore · ESP32-S3</span>
+          </div>
+        </div>
+      </div>
+      <div class="layer-arrow"><div class="arrow-dot">↓</div></div>
+      <div class="layer-item" style="--lc:#E85D24;" data-delay="150">
+        <div class="layer-accent"></div>
+        <div class="layer-body">
+          <div class="layer-name">Gatekeeper Katmanı</div>
+          <div class="layer-pills">
+            <span class="layer-pill">risk classifier · 4 seviye</span>
+            <span class="layer-pill">injection detection</span>
+            <span class="layer-pill">Telegram onay akışı</span>
+            <span class="layer-pill">audit log · gatekeeper.log</span>
+            <span class="layer-pill">LOW → CRITICAL</span>
+          </div>
+        </div>
+      </div>
+      <div class="layer-arrow"><div class="arrow-dot">↓</div></div>
+      <div class="layer-item" style="--lc:#2DD4BF;" data-delay="300">
+        <div class="layer-accent"></div>
+        <div class="layer-body">
+          <div class="layer-name">Agent & Modül Katmanı</div>
+          <div class="layer-pills">
+            <span class="layer-pill">soul_agent · 5dk cache</span>
+            <span class="layer-pill">memory_agent · FTS</span>
+            <span class="layer-pill">web_agent · 🌍 prefix</span>
+            <span class="layer-pill">team_agent · 🎯 prefix</span>
+            <span class="layer-pill">vault · persona · saglik · gorev</span>
+            <span class="layer-pill">_build_system()</span>
+          </div>
+        </div>
+      </div>
+      <div class="layer-arrow"><div class="arrow-dot">↓</div></div>
+      <div class="layer-item" style="--lc:#7C6EF5;" data-delay="450">
+        <div class="layer-accent"></div>
+        <div class="layer-body">
+          <div class="layer-name">Çekirdek · Soul API · :8000</div>
+          <div class="layer-pills">
+            <span class="layer-pill">FastAPI · uvicorn</span>
+            <span class="layer-pill">get_db() · god node #1 · 17 edge</span>
+            <span class="layer-pill">chat() · god node #4 · betweenness 0.058</span>
+            <span class="layer-pill">model factory → Claude / DeepSeek / Kimi / Ollama</span>
+            <span class="layer-pill">Scout · decay motor</span>
+            <span class="layer-pill">Persona Engine · read-only</span>
+            <span class="layer-pill">Tailscale · 100.115.79.121</span>
+          </div>
+        </div>
+      </div>
+      <div class="layer-arrow"><div class="arrow-dot">↓</div></div>
+      <div class="layer-item" style="--lc:#EF9F27;" data-delay="600">
+        <div class="layer-accent"></div>
+        <div class="layer-body">
+          <div class="layer-name">Veri & Hafıza Katmanı</div>
+          <div class="layer-pills">
+            <span class="layer-pill">theia.db · memory/sessions/messages</span>
+            <span class="layer-pill">soul.db · gorevler</span>
+            <span class="layer-pill">Obsidian Vault · TheiaMemory/System/</span>
+            <span class="layer-pill">obsidian_bridge · cron 15dk</span>
+            <span class="layer-pill">Graphify graph.json · 267 node</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">THEIA · ARCHITECTURE SNAPSHOT · v4.0 · 2026.05.15 · GRAPHIFY ENTEGRELİ · 267 NODE · KAPTAN</div>
+
+</div>
+
+<script>
+/* ── GRAPH DATA ─────────────────────────────────────────────────── */
+const NODES = [
+  { id:'kaptan',     label:'KAPTAN',        sub:'Kullanıcı · İsmail Karabulut',  color:'#C77DFF', x:0.50, y:0.04 },
+  { id:'redmi',      label:'REDMI NOTE',    sub:'Android · Termux',              color:'#C77DFF', x:0.14, y:0.04 },
+  { id:'apk',        label:'THEIA APK',     sub:'Capacitor · IP sorunu',         color:'#E85D24', x:0.14, y:0.15 },
+  { id:'stt',        label:'STT / TTS',     sub:'Capacitor native · tr-TR',      color:'#E85D24', x:0.02, y:0.27 },
+  { id:'backcore',   label:'BACKCORE',      sub:'ESP32-S3 · concept',            color:'#4FA8D5', x:0.86, y:0.04 },
+  { id:'phone',      label:'TERMUX',        sub:'theia-brief · jq',              color:'#E8B86D', x:0.14, y:0.27 },
+  { id:'tg',         label:'TELEGRAM',      sub:'PTB · theia.service',           color:'#4FA8D5', x:0.50, y:0.15 },
+  { id:'browser',    label:'SOUL HUD',      sub:'index.html · god node #3',      color:'#4FA8D5', x:0.86, y:0.15 },
+  { id:'bot',        label:'theia.service', sub:'main.py · systemd',             color:'#7C6EF5', x:0.50, y:0.27 },
+  { id:'gatekeeper', label:'GATEKEEPER',    sub:'v2.3 · risk · 4 seviye',        color:'#E85D24', x:0.30, y:0.33 },
+  { id:'handler',    label:'HANDLER',       sub:'message.py · _build_system',    color:'#7C6EF5', x:0.50, y:0.40 },
+  { id:'memory',     label:'MEMORY AGT',    sub:'FTS · vault · dinamik',         color:'#EF9F27', x:0.16, y:0.50 },
+  { id:'web',        label:'WEB AGENT',     sub:'🌍 prefix · opsiyonel',         color:'#1D9E75', x:0.32, y:0.58 },
+  { id:'team',       label:'TEAM AGENT',    sub:'🎯 prefix · 5 ajan',            color:'#2DD4BF', x:0.14, y:0.65 },
+  { id:'soul_ag',    label:'SOUL AGENT',    sub:'5dk cache · sabit zemin',       color:'#2DD4BF', x:0.68, y:0.50 },
+  { id:'soul',       label:'SOUL API',      sub:'theia-soul.service · :8000',    color:'#7C6EF5', x:0.86, y:0.50, isCore:true },
+  { id:'daily_ep',   label:'/soul/daily',   sub:'POST · günlük özet',            color:'#2DD4BF', x:0.14, y:0.38 },
+  { id:'db',         label:'theia.db',      sub:'get_db() · god node #1 · 17e', color:'#EF9F27', x:0.86, y:0.65 },
+  { id:'souldb',     label:'soul.db',       sub:'gorevler tablosu',              color:'#EF9F27', x:0.68, y:0.75 },
+  { id:'scout',      label:'SCOUT',         sub:'decay · 30/90 gün',             color:'#E8B86D', x:0.68, y:0.65 },
+  { id:'persona',    label:'PERSONA ENG',   sub:'v1.0 · read-only · 334 msg',   color:'#7C6EF5', x:0.50, y:0.65 },
+  { id:'bridge',     label:'BRIDGE',        sub:'obsidian_bridge · cron 15dk',   color:'#1D9E75', x:0.50, y:0.80 },
+  { id:'vault',      label:'OBSIDIAN',      sub:'TheiaMemory/System/',            color:'#EF9F27', x:0.16, y:0.92 },
+  { id:'graphify',   label:'GRAPHIFY',      sub:'267 node · 38.7x reduction',    color:'#2DD4BF', x:0.32, y:0.92 },
+  { id:'claude',     label:'CLAUDE',        sub:'sonnet-4-6 · varsayılan',       color:'#7C6EF5', x:0.68, y:0.92 },
+  { id:'ollama',     label:'OLLAMA',        sub:'llama3 · 32GB RAM',             color:'#1D9E75', x:0.86, y:0.82 },
+];
+
+const EDGES = [
+  { from:'kaptan',    to:'tg',         label:'mesaj' },
+  { from:'kaptan',    to:'phone',      label:'theia-brief "..."' },
+  { from:'kaptan',    to:'browser',    label:'HUD aç' },
+  { from:'redmi',     to:'apk',        label:'Capacitor WebView' },
+  { from:'apk',       to:'stt',        label:'native STT/TTS' },
+  { from:'apk',       to:'soul',       label:'POST /api/chat · Tailscale · SORUNLU', dashed:true },
+  { from:'redmi',     to:'tg',         label:'Termux · PTB' },
+  { from:'backcore',  to:'phone',      label:'wake-word → Termux', dashed:true },
+  { from:'phone',     to:'daily_ep',   label:'curl POST · Tailscale' },
+  { from:'daily_ep',  to:'soul',       label:'set_memory · daily_summary' },
+  { from:'tg',        to:'bot',        label:'PTB update' },
+  { from:'bot',       to:'handler',    label:'handle_message()' },
+  { from:'handler',   to:'gatekeeper', label:'risk check · before LLM' },
+  { from:'gatekeeper',to:'claude',     label:'approved → proceed' },
+  { from:'gatekeeper',to:'kaptan',     label:'HIGH/CRITICAL → TG approval', dashed:true },
+  { from:'handler',   to:'memory',     label:'get_context(query)' },
+  { from:'handler',   to:'web',        label:'🌍 prefix' },
+  { from:'handler',   to:'team',       label:'🎯 prefix', dashed:true },
+  { from:'handler',   to:'soul_ag',    label:'get_soul_context()' },
+  { from:'handler',   to:'claude',     label:'system prompt + history' },
+  { from:'memory',    to:'claude',     label:'memory_ctx · FTS', dashed:true },
+  { from:'web',       to:'claude',     label:'web_ctx', dashed:true },
+  { from:'soul_ag',   to:'claude',     label:'soul_ctx · core+daily', dashed:true },
+  { from:'soul_ag',   to:'soul',       label:'GET /api/memory · cached 5dk' },
+  { from:'browser',   to:'soul',       label:'POST /api/chat · /api/gorev' },
+  { from:'soul',      to:'db',         label:'SQLite I/O · get_db()' },
+  { from:'soul',      to:'souldb',     label:'gorevler CRUD' },
+  { from:'soul',      to:'claude',     label:'model factory', dashed:true },
+  { from:'soul',      to:'ollama',     label:'model factory', dashed:true },
+  { from:'vault',     to:'bridge',     label:'dosya okuma · .md' },
+  { from:'bridge',    to:'soul',       label:'PUT /api/memory/{key}' },
+  { from:'bridge',    to:'scout',      label:'check_and_update_status()' },
+  { from:'scout',     to:'db',         label:'active→passive→archived', dashed:true },
+  { from:'db',        to:'persona',    label:'SELECT · read-only', dashed:true },
+  { from:'persona',   to:'soul',       label:'router · /api/persona' },
+  { from:'graphify',  to:'soul',       label:'knowledge graph · theia-soul/', dashed:true },
+];
+
+/* ── GRAPH RENDER ───────────────────────────────────────────────── */
+const container = document.getElementById('graph-container');
+const svg       = document.getElementById('graph-svg');
+const tooltip   = document.getElementById('tooltip');
+
+function renderGraph() {
+  document.querySelectorAll('.graph-node').forEach(e => e.remove());
+  svg.innerHTML = '';
+  const W = container.offsetWidth, H = container.offsetHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  EDGES.forEach((e, idx) => {
+    const a = NODES.find(n => n.id === e.from), b = NODES.find(n => n.id === e.to);
+    if (!a || !b) return;
+    const x1=a.x*W, y1=a.y*H, x2=b.x*W, y2=b.y*H;
+    const dx=x2-x1, dy=y2-y1;
+    const isGate = (e.from==='gatekeeper'||e.to==='gatekeeper');
+    const col = isGate ? '#E85D24' : a.color;
+    const r=parseInt(col.slice(1,3),16), g=parseInt(col.slice(3,5),16), bb=parseInt(col.slice(5,7),16);
+    const pid='p_'+e.from+'_'+e.to+'_'+idx;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('id',pid);
+    path.setAttribute('d',`M ${x1} ${y1} C ${x1+dx*.2-dy*.08} ${y1+dy*.2+dx*.08}, ${x1+dx*.8+dy*.08} ${y1+dy*.8-dx*.08}, ${x2} ${y2}`);
+    path.setAttribute('stroke',`rgba(${r},${g},${bb},0.22)`);
+    path.setAttribute('stroke-width', e.dashed?'1':'1.3');
+    path.setAttribute('fill','none');
+    if(e.dashed) path.setAttribute('stroke-dasharray','5,4');
+    path.style.cursor='pointer'; path.style.pointerEvents='stroke';
+    path.addEventListener('mouseenter',()=>{
+      path.setAttribute('stroke',`rgba(${r},${g},${bb},0.9)`);
+      path.setAttribute('stroke-width',e.dashed?'1.8':'2.2');
+      tooltip.style.opacity='1'; tooltip.textContent=e.label;
+    });
+    path.addEventListener('mousemove',ev=>{
+      const rc=container.getBoundingClientRect();
+      tooltip.style.left=(ev.clientX-rc.left+14)+'px';
+      tooltip.style.top=(ev.clientY-rc.top-30)+'px';
+    });
+    path.addEventListener('mouseleave',()=>{
+      path.setAttribute('stroke',`rgba(${r},${g},${bb},0.22)`);
+      path.setAttribute('stroke-width',e.dashed?'1':'1.3');
+      tooltip.style.opacity='0';
+    });
+    svg.appendChild(path);
+
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('r','3');
+    circle.setAttribute('fill',`rgba(${r},${g},${bb},0.9)`);
+    circle.setAttribute('filter',`drop-shadow(0 0 4px rgba(${r},${g},${bb},0.8))`);
+    const anim=document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
+    anim.setAttribute('dur',(2.5+Math.random()*2.5)+'s');
+    anim.setAttribute('repeatCount','indefinite');
+    anim.setAttribute('begin',(Math.random()*3)+'s');
+    const mpath=document.createElementNS('http://www.w3.org/2000/svg','mpath');
+    mpath.setAttribute('href','#'+pid);
+    anim.appendChild(mpath); circle.appendChild(anim); svg.appendChild(circle);
+  });
+
+  NODES.forEach(n=>{
+    const x=n.x*W, y=n.y*H, el=document.createElement('div');
+    const cm={'#C77DFF':'pink','#4FA8D5':'blue','#7C6EF5':'purple','#EF9F27':'orange','#1D9E75':'green','#E85D24':'red','#E8B86D':'gold','#2DD4BF':'teal'};
+    const colorClass = cm[n.color]||'purple';
+    const isGate = n.id === 'gatekeeper';
+    el.className='graph-node gn-'+colorClass+(n.isCore?' gn-core':'')+(isGate?' gn-gatekeeper':'');
+    el.style.left=x+'px'; el.style.top=y+'px';
+    const c=n.color, r2=parseInt(c.slice(1,3),16), g2=parseInt(c.slice(3,5),16), b2=parseInt(c.slice(5,7),16);
+    el.innerHTML=`<div class="gn-box" style="border-color:rgba(${r2},${g2},${b2},0.4);background:rgba(${r2},${g2},${b2},${n.isCore?0.18:0.09});--nc:rgba(${r2},${g2},${b2},0.5);"><div class="gn-label" style="color:${c};${n.isCore?'font-size:11px;letter-spacing:.22em;':''}">${n.label}</div><div class="gn-sub">${n.sub}</div></div>`;
+    container.appendChild(el);
+  });
+}
+
+renderGraph();
+let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(renderGraph,150); });
+
+/* ── GRAPHIFY TABS ──────────────────────────────────────────────── */
+document.querySelectorAll('.gfy-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.gfy-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.gfy-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('gfy-' + tab.dataset.gfy).classList.add('active');
+  });
+});
+
+/* ── CODE TABS ──────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+  });
+});
+
+/* ── COPY BUTTON ────────────────────────────────────────────────── */
+function copyCode(btn) {
+  const pre = btn.nextElementSibling;
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = '✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ── LAYER STACK ────────────────────────────────────────────────── */
+const layerItems = document.querySelectorAll('.layer-item');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const delay = parseInt(entry.target.dataset.delay) || 0;
+      setTimeout(() => entry.target.classList.add('visible'), delay);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+layerItems.forEach(item => observer.observe(item));
+</script>
+</body>
+</html>
