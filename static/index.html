@@ -19,7 +19,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #matrixCanvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
 #warpCanvas{display:none;}
 
-.portal-scene{position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;}
+.portal-scene{position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;transition:opacity 1.5s ease;}
+.portal-scene.screensaver{opacity:0;pointer-events:none;}
 .portal-root{position:relative;width:min(700px,90vmin);height:min(700px,90vmin);}
 .orbit-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 
@@ -62,7 +63,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .module-label{font-family:'Orbitron',sans-serif;font-size:7px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-align:center;transition:color 0.3s;}
 .module-btn:hover .module-label{color:var(--mac,var(--text));}
 
-.top-bar{position:fixed;top:0;left:0;right:0;height:48px;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(3,2,10,0.75);border-bottom:1px solid var(--border);backdrop-filter:blur(18px);}
+.top-bar{position:fixed;top:0;left:0;right:0;height:48px;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(3,2,10,0.75);border-bottom:1px solid var(--border);backdrop-filter:blur(18px);transition:opacity 1.5s ease;}
+.top-bar.screensaver{opacity:0;pointer-events:none;}
 .top-brand{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;letter-spacing:.2em;color:#fff;text-shadow:0 0 30px rgba(124,110,245,0.5);}
 .top-brand span{color:var(--purple);}
 .top-right{display:flex;align-items:center;gap:14px;}
@@ -175,12 +177,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 @keyframes tdota{0%,60%,100%{transform:translateY(0);opacity:0.35;}30%{transform:translateY(-5px);opacity:1;}}
 
 .chat-inp-area{padding:12px 20px 16px;border-top:1px solid var(--border);background:rgba(0,0,0,0.22);flex-shrink:0;}
-.inp-wrap{display:flex;align-items:flex-end;gap:9px;border:1px solid rgba(124,110,245,0.2);border-radius:13px;background:rgba(255,255,255,0.02);padding:10px 13px;transition:all 0.25s ease;}
+.inp-wrap{display:flex;flex-direction:column;gap:8px;border:1px solid rgba(124,110,245,0.2);border-radius:13px;background:rgba(255,255,255,0.02);padding:10px 13px;transition:all 0.25s ease;}
+.inp-top-row{display:flex;align-items:flex-start;gap:9px;}
+.inp-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.inp-actions{display:flex;align-items:center;gap:6px;}
 .inp-wrap:focus-within{border-color:rgba(124,110,245,0.48);box-shadow:0 0 0 3px rgba(124,110,245,0.07);}
-.inp-pfx{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--purple);opacity:0.65;flex-shrink:0;padding-bottom:1px;}
-.chat-ta{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;resize:none;min-height:22px;max-height:130px;line-height:1.5;}
+.inp-pfx{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--purple);opacity:0.65;flex-shrink:0;padding-top:3px;}
+.chat-ta{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;resize:none;min-height:48px;max-height:130px;line-height:1.55;width:100%;}
 .chat-ta::placeholder{color:var(--dim);}
-.inp-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.inp-right{display:flex;align-items:center;gap:8px;}
 .iact{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .iact:hover{border-color:rgba(255,255,255,0.18);color:var(--text);background:rgba(255,255,255,0.04);}
 .iact.micon{border-color:rgba(232,93,36,0.5);color:var(--red);background:rgba(232,93,36,0.08);animation:mring 1.5s ease-in-out infinite;}
@@ -203,6 +208,42 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 .mic-overlay{position:fixed;inset:0;z-index:60;background:rgba(3,2,10,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px;}
 .mic-overlay.on{display:flex;}
+
+/* ses modül header */
+.ses-mod-hdr{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.3);}
+.ses-mod-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--red);}
+.ses-mod-controls{display:flex;align-items:center;gap:16px;}
+
+/* TTS toggle */
+.ses-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface);transition:all .2s;}
+.ses-toggle.active{border-color:rgba(124,110,245,0.45);background:rgba(124,110,245,0.08);}
+.ses-toggle-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:all .2s;}
+.ses-toggle.active .ses-toggle-dot{background:var(--purple);box-shadow:0 0 7px var(--purple);}
+.ses-toggle-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--muted);transition:color .2s;}
+.ses-toggle.active .ses-toggle-lbl{color:var(--purple);}
+
+/* hız slider */
+.ses-rate-wrap{display:flex;align-items:center;gap:7px;}
+.ses-rate-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.15em;color:var(--dim);}
+.ses-rate-slider{-webkit-appearance:none;width:72px;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer;}
+.ses-rate-slider::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--purple);box-shadow:0 0 6px rgba(124,110,245,0.6);}
+.ses-rate-val{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--purple);width:28px;}
+
+/* durum satırı */
+.ses-status-row{display:flex;align-items:center;gap:12px;}
+.ses-lang-badge{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;padding:3px 9px;border:1px solid rgba(232,93,36,0.3);border-radius:4px;color:var(--red);background:rgba(232,93,36,0.05);}
+
+/* TTS okuma satırı */
+.ses-tts-row{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.ses-tts-wave{width:180px;height:36px;}
+.ses-tts-lbl{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.22em;color:var(--purple);animation:mblk 1.2s ease-in-out infinite;}
+/* push-to-talk butonu */
+.ses-ptt-btn{position:relative;width:120px;height:120px;border-radius:50%;border:2px solid rgba(232,93,36,0.4);background:rgba(232,93,36,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.ses-ptt-btn:active,.ses-ptt-btn.active{border-color:var(--red);background:rgba(232,93,36,0.22);transform:scale(0.94);}
+.ses-ptt-icon{font-size:44px;line-height:1;pointer-events:none;}
+.ses-ptt-ring{position:absolute;inset:-8px;border-radius:50%;border:1.5px solid rgba(232,93,36,0.25);pointer-events:none;}
+.ses-ptt-btn.active .ses-ptt-ring{animation:pttPulse 1s ease-in-out infinite;}
+@keyframes pttPulse{0%,100%{transform:scale(1);opacity:0.5;}50%{transform:scale(1.12);opacity:1;}}
 .mic-wave{width:280px;height:88px;}
 .mic-stat{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.28em;color:var(--red);animation:mblk 1s ease-in-out infinite;}
 @keyframes mblk{0%,100%{opacity:1;}50%{opacity:0.3;}}
@@ -317,6 +358,107 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sdi-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.04);}
 .sdi-fill{height:100%;border-radius:2px;}
 @media(max-width:700px){.vault-body{grid-template-columns:1fr;}.vault-scout{order:-1;}}
+
+/* ── SAĞLIK OVERLAY ── */
+.saglik-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;}
+.saglik-body::-webkit-scrollbar{width:3px;}
+.saglik-body::-webkit-scrollbar-thumb{background:rgba(29,158,117,0.2);}
+
+.sg-refresh-btn{display:flex;align-items:center;gap:6px;padding:5px 13px;border:1px solid rgba(29,158,117,0.3);border-radius:8px;background:rgba(29,158,117,0.05);cursor:pointer;transition:all 0.2s;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--green);}
+.sg-refresh-btn:hover{background:rgba(29,158,117,0.1);border-color:rgba(29,158,117,0.55);}
+.sg-refresh-btn.spinning{animation:sgSpin 0.9s linear infinite;}
+@keyframes sgSpin{to{transform:rotate(360deg);}}
+
+/* üst durum grid */
+.sg-status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.sg-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;transition:all .25s;}
+.sg-stat::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--sc,var(--green)),transparent);}
+.sg-stat:hover{border-color:var(--sc,rgba(29,158,117,.3));transform:translateY(-2px);}
+.sg-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.sg-stat-val{font-family:'Orbitron',sans-serif;font-size:clamp(16px,2vw,24px);font-weight:700;color:var(--sc,var(--green));letter-spacing:.04em;line-height:1;}
+.sg-stat-sub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-top:5px;}
+
+/* servis kartları */
+.sg-services{display:flex;flex-direction:column;gap:8px;}
+.sg-svc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:14px;transition:border-color .2s;}
+.sg-svc-card.ok{border-color:rgba(29,158,117,0.2);}
+.sg-svc-card.warn{border-color:rgba(239,159,39,0.25);}
+.sg-svc-card.err{border-color:rgba(232,93,36,0.25);}
+.sg-svc-card.chk{border-color:rgba(255,255,255,0.06);}
+.sg-svc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.sg-svc-dot.ok{background:var(--green);box-shadow:0 0 7px var(--green);}
+.sg-svc-dot.warn{background:var(--orange);box-shadow:0 0 7px var(--orange);}
+.sg-svc-dot.err{background:var(--red);box-shadow:0 0 7px var(--red);}
+.sg-svc-dot.chk{background:var(--dim);animation:stPulse 1.2s ease-in-out infinite;}
+.sg-svc-name{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--text);}
+.sg-svc-desc{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--dim);margin-top:2px;}
+.sg-svc-latency{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.sg-svc-latency.ok{color:var(--green);}
+.sg-svc-latency.warn{color:var(--orange);}
+.sg-svc-latency.err{color:var(--red);}
+.sg-svc-latency.chk{color:var(--dim);}
+.sg-svc-badge{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;padding:3px 9px;border-radius:4px;border:1px solid;white-space:nowrap;}
+.sg-svc-badge.ok{border-color:rgba(29,158,117,0.35);color:var(--green);background:rgba(29,158,117,0.06);}
+.sg-svc-badge.warn{border-color:rgba(239,159,39,0.35);color:var(--orange);background:rgba(239,159,39,0.06);}
+.sg-svc-badge.err{border-color:rgba(232,93,36,0.35);color:var(--red);background:rgba(232,93,36,0.06);}
+.sg-svc-badge.chk{border-color:rgba(255,255,255,0.08);color:var(--dim);background:transparent;}
+
+/* latency sparkline */
+.sg-spark-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.sg-spark-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:.26em;color:var(--green);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.sg-spark-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(29,158,117,0.2),transparent);}
+.sg-spark-wrap{display:flex;flex-direction:column;gap:10px;}
+.sg-spark-row{display:flex;align-items:center;gap:10px;}
+.sg-spark-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);width:80px;flex-shrink:0;letter-spacing:.04em;}
+.sg-spark-bars{display:flex;align-items:flex-end;gap:2px;height:32px;flex:1;}
+.sg-spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:height 0.6s cubic-bezier(.23,1,.32,1);}
+.sg-spark-val{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;width:52px;text-align:right;flex-shrink:0;}
+
+@media(max-width:700px){.sg-status-grid{grid-template-columns:1fr 1fr;}.sg-svc-card{grid-template-columns:auto 1fr auto;}.sg-svc-badge{display:none;}}
+
+/* ── TEAM OVERLAY ── */
+.team-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
+.team-body::-webkit-scrollbar{width:3px;}
+.team-body::-webkit-scrollbar-thumb{background:rgba(232,184,109,0.2);}
+
+.team-sec-card{background:var(--surface);border:1px solid rgba(232,184,109,0.2);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.team-sec-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--gold),transparent);}
+.team-sec-label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:.28em;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.team-sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(232,184,109,0.2),transparent);}
+.team-sec-content{font-family:'Rajdhani',sans-serif;font-size:14px;line-height:1.75;color:rgba(255,255,255,0.7);}
+.team-sec-item{display:flex;gap:10px;margin-bottom:10px;}
+.team-sec-key{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;min-width:110px;flex-shrink:0;padding-top:3px;}
+.team-sec-val{flex:1;}
+
+.team-agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.team-agent-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.team-agent-card:hover{border-color:rgba(124,110,245,0.3);transform:translateY(-2px);}
+.team-agent-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--ac,var(--purple)),transparent);}
+.team-agent-glyph{font-size:20px;line-height:1;margin-bottom:6px;}
+.team-agent-name{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;letter-spacing:.18em;color:var(--ac,var(--purple));margin-bottom:4px;}
+.team-agent-role{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-bottom:10px;}
+.team-agent-snippet{font-family:'Rajdhani',sans-serif;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.team-agent-expand{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-top:8px;letter-spacing:.1em;}
+
+.team-trig-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.team-trig-label{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.28em;color:var(--dim);margin-bottom:12px;}
+.team-trig-list{display:flex;flex-direction:column;gap:6px;}
+.team-trig-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.team-trig-item:hover{border-color:rgba(232,184,109,0.25);background:rgba(232,184,109,0.04);}
+.team-trig-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.team-trig-text{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.team-trig-time{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);flex-shrink:0;}
+
+.team-empty{text-align:center;padding:32px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);line-height:1.8;}
+
+/* ajan renkleri */
+.team-agent-card[data-agent="mimar"]{--ac:#4FA8D5;}
+.team-agent-card[data-agent="tarihci"]{--ac:#C77DFF;}
+.team-agent-card[data-agent="antitez"]{--ac:#E85D24;}
+.team-agent-card[data-agent="toplumcu"]{--ac:#1D9E75;}
+.team-agent-card[data-agent="stratejist"]{--ac:#2DD4BF;}
+
+@media(max-width:700px){.team-agents-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -324,7 +466,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <canvas id="matrixCanvas"></canvas>
 <canvas id="warpCanvas"></canvas>
 
-<div class="top-bar">
+<div class="top-bar" id="topBar">
   <div class="top-brand">THEIA<span>·</span>PORTAL</div>
   <div class="top-right">
     <div class="status-dot"></div>
@@ -410,18 +552,24 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
   <div class="chat-inp-area">
     <div class="inp-wrap">
-      <span class="inp-pfx">&gt;_</span>
-      <textarea class="chat-ta" id="chatTa" placeholder="mesajını gir... (🌍 prefix = web arama)" rows="1"></textarea>
-      <div class="inp-right">
-        <button class="iact" id="micBtn" title="Sesli giriş">🎤</button>
-        <button class="iact" id="webBtn" title="Web ekle">🌍</button>
-        <button class="iact" id="gkBtn" title="Gatekeeper log">🛡</button>
-        <button class="send-btn" id="sendBtn">GÖNDER</button>
+      <div class="inp-top-row">
+        <span class="inp-pfx">&gt;_</span>
+        <textarea class="chat-ta" id="chatTa" placeholder="mesajını gir... (🌍 prefix = web arama, 🎯 prefix = TEAM analizi)" rows="2"></textarea>
+      </div>
+      <div class="inp-bottom-row">
+        <div class="inp-actions">
+          <button class="iact" id="micBtn" title="Sesli giriş">🎤</button>
+          <button class="iact" id="webBtn" title="Web ekle">🌍</button>
+          <button class="iact" id="gkBtn" title="Gatekeeper log">🛡</button>
+        </div>
+        <div class="inp-right">
+          <span id="charCount" style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--dim);">0</span>
+          <button class="send-btn" id="sendBtn">GÖNDER</button>
+        </div>
       </div>
     </div>
     <div class="inp-footer">
-      <span>ENTER · gönder &nbsp;·&nbsp; SHIFT+ENTER · yeni satır</span>
-      <span id="charCount">0</span>
+      <span>ENTER · gönder &nbsp;·&nbsp; SHIFT+ENTER · yeni satır &nbsp;·&nbsp; 🎯 = çoklu bakış</span>
     </div>
   </div>
 </div>
@@ -446,7 +594,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 
   <div class="persona-body" id="personaBody">
-    <!-- stat grid -->
     <div class="p-stat-grid">
       <div class="p-stat" style="--pc:#2DD4BF;">
         <div class="p-stat-lbl">Peak Saat</div>
@@ -467,7 +614,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <!-- heatmap -->
       <div class="p-card">
         <div class="p-card-title">Aktivite Haritası</div>
         <div class="p-hm-wrap">
@@ -478,7 +624,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           </div>
         </div>
       </div>
-      <!-- token + trigram -->
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="p-card">
           <div class="p-card-title">Token Sarfiyatı</div>
@@ -499,7 +644,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       </div>
     </div>
 
-    <!-- leitmotif -->
     <div class="p-lm">
       <div class="p-lm-label">Top Trigram · Leitmotif</div>
       <div class="p-lm-quote" id="ps-lm">"—"</div>
@@ -523,11 +667,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 
   <div class="vault-body" id="vaultBody">
-    <!-- kayıt listesi -->
     <div class="vault-list" id="vaultList">
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);padding:20px;text-align:center;">yükleniyor...</div>
     </div>
-    <!-- scout panel -->
     <div class="vault-scout">
       <div class="scout-card">
         <div class="scout-title">Scout · Decay</div>
@@ -567,6 +709,98 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 </div>
 
+<!-- ══ SAĞLIK OVERLAY ══ -->
+<div class="chat-overlay" id="saglikOverlay">
+  <div class="chat-hdr">
+    <div class="chat-hdr-l">
+      <button class="back-btn" id="saglikBackBtn">←</button>
+      <div>
+        <div class="chat-title" style="color:var(--green);">SAĞLIK · SERVİS DURUMU</div>
+        <div class="chat-sub" id="saglikMeta">kontrol ediliyor...</div>
+      </div>
+    </div>
+    <div class="chat-hdr-r">
+      <div class="risk-bdg" style="border-color:rgba(29,158,117,0.35);color:var(--green);" id="saglikBadge">● KONTROL...</div>
+      <button class="sg-refresh-btn" id="saglikRefresh">↻ YENILE</button>
+    </div>
+  </div>
+
+  <div class="saglik-body">
+    <div class="sg-status-grid">
+      <div class="sg-stat" style="--sc:#1D9E75;">
+        <div class="sg-stat-lbl">Toplam Servis</div>
+        <div class="sg-stat-val" id="sg-total">—</div>
+        <div class="sg-stat-sub">kayıtlı</div>
+      </div>
+      <div class="sg-stat" style="--sc:#1D9E75;">
+        <div class="sg-stat-lbl">Aktif</div>
+        <div class="sg-stat-val" id="sg-ok">—</div>
+        <div class="sg-stat-sub">online</div>
+      </div>
+      <div class="sg-stat" style="--sc:#EF9F27;">
+        <div class="sg-stat-lbl">Uyarı</div>
+        <div class="sg-stat-val" id="sg-warn">—</div>
+        <div class="sg-stat-sub">degraded</div>
+      </div>
+      <div class="sg-stat" style="--sc:#E85D24;">
+        <div class="sg-stat-lbl">Hata</div>
+        <div class="sg-stat-val" id="sg-err">—</div>
+        <div class="sg-stat-sub">offline</div>
+      </div>
+    </div>
+
+    <div class="sg-services" id="sgServiceList">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);padding:20px;text-align:center;">servisler yükleniyor...</div>
+    </div>
+
+    <div class="sg-spark-card">
+      <div class="sg-spark-title">Latency Geçmişi · Son 10 Ölçüm</div>
+      <div class="sg-spark-wrap" id="sgSparkWrap">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);text-align:center;padding:10px;">veri bekleniyor...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TEAM OVERLAY ══ -->
+<div class="chat-overlay" id="teamOverlay">
+  <div class="chat-hdr">
+    <div class="chat-hdr-l">
+      <button class="back-btn" id="teamBackBtn">←</button>
+      <div>
+        <div class="chat-title" style="color:var(--gold);">TEAM · BİLİŞSEL MERCEK</div>
+        <div class="chat-sub" id="teamMeta">v1.0 · son güncelleme: —</div>
+      </div>
+    </div>
+    <div class="chat-hdr-r">
+      <div class="risk-bdg" style="border-color:rgba(232,184,109,0.35);color:var(--gold);" id="teamBadge">🎯 PREFIX</div>
+    </div>
+  </div>
+
+  <div class="team-body" id="teamBody">
+    <!-- Sekreter Özeti -->
+    <div class="team-sec-card" id="teamSecCard">
+      <div class="team-sec-label">SEKRETER ÖZETİ</div>
+      <div class="team-sec-content" id="teamSecContent">
+        <div class="team-empty">Henüz 🎯 prefix analizi yok.<br>Bir mesaja 🎯 ekleyerek başlat.</div>
+      </div>
+    </div>
+
+    <!-- Ajan Kartları -->
+    <div class="team-agents-grid" id="teamAgentsGrid">
+      <!-- Dinamik doldurulacak -->
+    </div>
+
+    <!-- Tetikleyici Geçmişi -->
+    <div class="team-trig-card">
+      <div class="team-trig-label">// SON TETİKLEYİCİLER</div>
+      <div class="team-trig-list" id="teamTrigList">
+        <div class="team-trig-empty">· kayıt yok ·</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="gk-drawer" id="gkDrawer">
   <div class="gk-hdr">
     <span class="gk-hdr-title">// GATEKEEPER AUDIT</span>
@@ -578,10 +812,42 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 </div>
 
 <div class="mic-overlay" id="micOverlay">
-  <svg class="mic-wave" viewBox="0 0 280 88"><path id="micWave" fill="none" stroke="#E85D24" stroke-width="2" opacity="0.85"/></svg>
-  <div class="mic-stat">DİNLİYORUM...</div>
-  <div class="mic-tx" id="micTx"></div>
-  <button class="mic-stop" id="micStop">DURDURUM [ESC]</button>
+  <div class="ses-mod-hdr">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="back-btn" id="sesModBackBtn">←</button>
+      <div class="ses-mod-title">SES · MODÜL</div>
+    </div>
+    <div class="ses-mod-controls">
+      <div class="ses-toggle" id="ttsToggle">
+        <div class="ses-toggle-dot" id="ttsToggleDot"></div>
+        <span class="ses-toggle-lbl" id="ttsToggleLbl">TTS OFF</span>
+      </div>
+      <div class="ses-rate-wrap">
+        <span class="ses-rate-lbl">HIZ</span>
+        <input class="ses-rate-slider" id="ttsRate" type="range" min="0.5" max="2" step="0.1" value="1">
+        <span class="ses-rate-val" id="ttsRateVal">1.0×</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mic-tx" id="micTx" style="min-height:48px;max-width:80%;text-align:center;font-size:16px;"></div>
+
+  <svg class="mic-wave" viewBox="0 0 280 88" id="micWaveSvg" style="opacity:0;transition:opacity 0.3s;"><path id="micWave" fill="none" stroke="#E85D24" stroke-width="2" opacity="0.85"/></svg>
+
+  <div class="ses-status-row">
+    <div class="mic-stat" id="micStat" style="font-size:10px;letter-spacing:.22em;color:var(--dim);">BASMAK İÇİN HAZIR</div>
+    <div class="ses-lang-badge">TR-TR</div>
+  </div>
+
+  <button class="ses-ptt-btn" id="sesPttBtn">
+    <div class="ses-ptt-ring" id="sesPttRing"></div>
+    <div class="ses-ptt-icon">🎙</div>
+  </button>
+
+  <div class="ses-tts-row" id="sesTtsRow" style="display:none;">
+    <svg class="ses-tts-wave" viewBox="0 0 180 36"><path id="ttsWavePath" fill="none" stroke="#7C6EF5" stroke-width="1.5" opacity="0.85"/></svg>
+    <div class="ses-tts-lbl">OKUYORUM...</div>
+  </div>
 </div>
 
 <script>
@@ -603,30 +869,52 @@ function initMatrix() {
   const cx = cv.getContext('2d');
   const PAL = ['#7C6EF5','#2DD4BF','#EF9F27','#4FA8D5','#C77DFF','#1D9E75','#E8B86D'];
   const CH  = 'THEIA01アイウエオカキクケコ∑∆Ωλπ∞◈';
-  let cols, drops, cmap, warp = 1, twarp = 1;
+  let cols, drops, cmap, warp = 1, twarp = 1, ssaver = false;
   function rsz() {
     cv.width = innerWidth; cv.height = innerHeight;
     cols = Math.floor(cv.width/13);
-    drops = Array.from({length:cols}, ()=>Math.random()*-80);
+    drops = Array.from({length:cols}, ()=>Math.random()*-40);
     cmap  = Array.from({length:cols}, ()=>PAL[Math.random()*PAL.length|0]);
   }
   function frame() {
     warp += (twarp - warp)*0.07;
-    cx.fillStyle = `rgba(3,2,10,${0.055+(warp-1)*0.03})`;
+    cx.fillStyle = `rgba(3,2,10,${ssaver ? 0.040 : 0.055+(warp-1)*0.03})`;
     cx.fillRect(0,0,cv.width,cv.height);
     cx.font = '13px JetBrains Mono,monospace';
     for (let i=0;i<cols;i++) {
       const c=cmap[i], r=parseInt(c.slice(1,3),16), g=parseInt(c.slice(3,5),16), b=parseInt(c.slice(5,7),16);
-      cx.fillStyle = `rgba(${r},${g},${b},${(0.1+Math.random()*0.16)*Math.min(warp,2.2)})`;
+      const alpha = ssaver ? (0.75+Math.random()*0.60) : (0.1+Math.random()*0.16)*Math.min(warp,2.2);
+      cx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
       cx.fillText(CH[Math.random()*CH.length|0], i*13, drops[i]*13);
-      drops[i] += (0.45+Math.random()*0.55)*warp;
+      drops[i] += (0.45+Math.random()*0.55)*(ssaver ? 0.5 : warp);
       if (drops[i]*13>cv.height && Math.random()>0.972) { drops[i]=0; cmap[i]=PAL[Math.random()*PAL.length|0]; }
     }
     requestAnimationFrame(frame);
   }
   addEventListener('resize', rsz); rsz(); frame();
-  window.mxWarp = s => { twarp = s; };
+  window.mxWarp  = s => { twarp = s; };
+  window.mxSaver = s => {
+    ssaver = s;
+    const portal = document.getElementById('portalScene');
+    const topBar = document.getElementById('topBar');
+    if (s) {
+      portal.classList.add('screensaver');
+      if(topBar) topBar.classList.add('screensaver');
+    } else {
+      portal.classList.remove('screensaver');
+      if(topBar) topBar.classList.remove('screensaver');
+    }
+  };
 }
+/* ── SCREENSAVER TIMER ── */
+let ssTimer;
+function resetSS(){
+  clearTimeout(ssTimer);
+  if(window.mxSaver) window.mxSaver(false);
+  ssTimer = setTimeout(() => { if(window.mxSaver) window.mxSaver(true); }, 15000);
+}
+['mousemove','keydown','touchstart','click'].forEach(e=>document.addEventListener(e,resetSS));
+resetSS();
 
 /* ════════════════════════════════════════
    WARP CANVAS — Z-STREAK EFEKTİ
@@ -653,12 +941,11 @@ const MODS = [
   {id:'saglik',   label:'SAĞLIK',  g:'⚡', col:'#1D9E75', desc:'servis durumu'},
   {id:'gatekeeper',label:'GATE',   g:'🛡', col:'#E85D24', desc:'risk log'},
   {id:'gorev',    label:'GÖREV',   g:'📋', col:'#E8B86D', desc:'scheduler'},
-  {id:'gelecek',  label:'???',     g:'◈',  col:'#2a2a44', desc:'yakında'},
+  {id:'team',     label:'TEAM',    g:'🎯', col:'#E8B86D', desc:'çoklu bakış · karar destek'},
 ];
 function rgb(h){ return h.startsWith('#')?`${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)}`:'170,170,170'; }
 
 function buildPortal() {
-  // İki rAF: ilk layout hesaplar, ikinci boyut kesinleşir
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const root = document.getElementById('portalRoot');
     const rect = root.getBoundingClientRect();
@@ -680,7 +967,6 @@ function buildPortal() {
       const y = cy + radius*Math.sin(ang);
       const r = rgb(m.col);
 
-      // Çizgi
       const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
       ln.setAttribute('x1',cx); ln.setAttribute('y1',cy);
       ln.setAttribute('x2',x);  ln.setAttribute('y2',y);
@@ -689,7 +975,6 @@ function buildPortal() {
       ln.setAttribute('stroke-dasharray','3 7');
       svgG.appendChild(ln);
 
-      // Buton
       const btn = document.createElement('div');
       btn.className='module-btn';
       btn.style.left=x+'px'; btn.style.top=y+'px';
@@ -699,16 +984,14 @@ function buildPortal() {
       btn.style.setProperty('--mbg',`rgba(${r},0.07)`);
       btn.style.setProperty('--mgl',`rgba(${r},0.1)`);
       btn.style.setProperty('--mglo',`rgba(${r},0.15)`);
-      const isF = m.id==='gelecek';
-      btn.innerHTML=`<div class="module-inner"${isF?' style="opacity:0.32;cursor:default;"':''}>
+      btn.innerHTML=`<div class="module-inner">
         <div class="module-glyph">${m.g}</div>
-        <div class="module-label"${isF?'':` style="color:${m.col}99;"`}>${m.label}</div>
+        <div class="module-label" style="color:${m.col}99;">${m.label}</div>
       </div>`;
-      if(!isF) btn.addEventListener('click',()=>onMod(m));
+      btn.addEventListener('click',()=>onMod(m));
       modsEl.appendChild(btn);
     });
 
-    // Stagger giriş
     modsEl.querySelectorAll('.module-btn').forEach((b,i)=>{
       b.style.opacity='0'; b.style.transform='translate(-50%,-50%) scale(0.6)';
       setTimeout(()=>{
@@ -740,7 +1023,30 @@ function onMod(m) {
   if (m.id==='gatekeeper') { openChat(); setTimeout(openGk,520); return; }
   if (m.id==='persona')    { openPersona(); return; }
   if (m.id==='vault')      { openVault(); return; }
+  if (m.id==='saglik')     { openSaglik(); return; }
+  if (m.id==='ses')        { openSesOverlay(); return; }
+  if (m.id==='gorev')      { window.openGorev(); return; }
+  if (m.id==='team')       { openTeam(); return; }
   toast(`${m.g} ${m.label} — yakında`, m.col);
+}
+
+let isSesOverlayOpen = false;
+
+function openSesOverlay() {
+  window.warpOpen(() => {
+    document.getElementById('micOverlay').classList.add('on');
+    isSesOverlayOpen = true;
+    gkLog('LOW', 'Ses modülü açıldı');
+  });
+}
+
+function closeSesOverlay() {
+  stopListening();
+  stopSpeaking();
+  window.warpClose(() => {
+    document.getElementById('micOverlay').classList.remove('on');
+    isSesOverlayOpen = false;
+  });
 }
 function toast(msg, col) {
   const r=rgb(col.startsWith('#')?col:'#7C6EF5');
@@ -844,6 +1150,15 @@ async function sendMsg() {
   const ta=document.getElementById('chatTa');
   const txt=ta.value.trim();
   if(!txt||isThinking) return;
+
+  // 🖖 - selamlama/kapanış (her şeyden önce kontrol)
+  if (txt === '🖖') {
+    ta.value = '';
+    saveSession();
+    setTimeout(() => closeChat(), 300);
+    return;
+  }
+
   const empty=document.getElementById('chatEmpty');
   if(empty) empty.remove();
   const now=fmtT(new Date());
@@ -851,9 +1166,15 @@ async function sendMsg() {
   msgStore.push({role:'user',text:txt,time:now});
   ta.value=''; ta.style.height='auto';
   document.getElementById('charCount').textContent='0';
+
+  // Risk kontrolü ÖNCE — CRITICAL ise hiçbir şey tetikleme
   const risk=riskCheck(txt);
   updateRisk(risk); gkLog(risk, txt.slice(0,70).replace(/\n/g,' '));
   if(risk==='CRITICAL'){ addSysBbl('⛔ Gatekeeper: reddedildi.'); return; }
+
+  // Risk geçti, şimdi 🎯 TEAM prefix kontrolü
+  const isTeam = window.handleTeamPrefix ? window.handleTeamPrefix(txt) : false;
+
   const isWeb=txt.startsWith('🌍');
   const q=isWeb?txt.slice(1).trim():txt;
   showThink();
@@ -897,8 +1218,11 @@ function addTheiaBbl(txt,time,stream) {
   if(stream) {
     const parts=html.split(/(?<=\s)/);
     let i=0;
-    const t=setInterval(()=>{ if(i>=parts.length){clearInterval(t);return;} bbl.innerHTML+=parts[i++]; msgs.scrollTop=msgs.scrollHeight; },20);
-  } else { bbl.innerHTML=html; }
+    const t=setInterval(()=>{ if(i>=parts.length){clearInterval(t); speakText(txt); return;} bbl.innerHTML+=parts[i++]; msgs.scrollTop=msgs.scrollHeight; },20);
+  } else {
+    bbl.innerHTML=html;
+    speakText(txt);
+  }
 }
 
 function addSysBbl(txt) {
@@ -959,37 +1283,259 @@ function openGk()  { document.getElementById('gkDrawer').classList.add('open'); 
 function closeGk() { document.getElementById('gkDrawer').classList.remove('open'); }
 
 /* ── Voice ── */
+function getCapSpeech() {
+  return window?.Capacitor?.Plugins?.SpeechRecognition || null;
+}
+
 function initVoice() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ document.getElementById('micBtn').style.opacity='0.3'; return; }
-  recognition=new SR(); recognition.lang='tr-TR'; recognition.continuous=false; recognition.interimResults=true;
-  recognition.onresult=e=>{ const tx=Array.from(e.results).map(r=>r[0].transcript).join(''); document.getElementById('micTx').textContent=tx; if(e.results[0].isFinal){const f=e.results[0][0].transcript.trim(); stopListening(); if(f){document.getElementById('chatTa').value=f; sendMsg();}} };
-  recognition.onerror=e=>{ document.getElementById('micTx').textContent='Hata: '+e.error; setTimeout(stopListening,1400); };
-  recognition.onend=()=>{ if(isListening) stopListening(); };
+  const capSR = getCapSpeech();
+  if (capSR) {
+    window._useCapSpeech = true;
+    gkLog('LOW', 'STT: Capacitor native');
+  } else {
+    window._useCapSpeech = false;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      document.getElementById('micBtn').style.opacity = '0.3';
+      gkLog('WARN', 'STT: kullanılamıyor');
+      return;
+    }
+    recognition = new SR();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = e => {
+      const tx = Array.from(e.results).map(r => r[0].transcript).join('');
+      document.getElementById('micTx').textContent = tx;
+      if (e.results[0].isFinal) {
+        const f = e.results[0][0].transcript.trim();
+        stopListening();
+        if (f) { document.getElementById('chatTa').value = f; sendMsg(); }
+      }
+    };
+    recognition.onerror = e => {
+      document.getElementById('micTx').textContent = 'Hata: ' + e.error;
+      setTimeout(stopListening, 1400);
+    };
+    recognition.onend = () => { if (isListening) stopListening(); };
+    gkLog('LOW', 'STT: Web SpeechRecognition');
+  }
 }
-function startListening() {
-  if(!recognition) return; isListening=true;
-  try{recognition.start();}catch(e){isListening=false;return;}
-  document.getElementById('micOverlay').classList.add('on');
-  document.getElementById('micBtn').classList.add('micon');
-  micWave();
+
+async function startListening() {
+  const capSR = getCapSpeech();
+
+  if (capSR) {
+    try {
+      const perm = await capSR.requestPermissions();
+      if (perm.speechRecognition !== 'granted') {
+        toast('Mikrofon izni gerekli', '#E85D24');
+        gkLog('WARN', 'STT: izin reddedildi');
+        return;
+      }
+      const { available } = await capSR.available();
+      if (!available) { toast('STT bu cihazda çalışmıyor', '#E85D24'); return; }
+
+      await capSR.removeAllListeners().catch(()=>{});
+      if (window._sttKeepAlive) { clearInterval(window._sttKeepAlive); window._sttKeepAlive = null; }
+
+      await capSR.addListener('partialResults', data => {
+        if (data.matches?.length) {
+          const prev = document.getElementById('micTx').dataset.accumulated || '';
+          document.getElementById('micTx').textContent = prev ? prev + ' ' + data.matches[0] : data.matches[0];
+        }
+      });
+      await capSR.addListener('listeningState', d => gkLog('LOW', 'STT: ' + d.status));
+
+      isListening = true;
+      document.getElementById('sesPttBtn')?.classList.add('active');
+      document.getElementById('micWaveSvg')?.style.setProperty('opacity','1');
+      document.getElementById('micStat').textContent = 'DİNLİYORUM...';
+      document.getElementById('micBtn')?.classList.add('micon');
+      micWave();
+
+      await capSR.start({ language:'tr-TR', maxResults:2, partialResults:true, popup:false });
+
+      window._sttKeepAlive = setInterval(async () => {
+        if (!isListening) { clearInterval(window._sttKeepAlive); window._sttKeepAlive = null; return; }
+        try {
+          const { listening } = await capSR.isListening();
+          if (!listening) {
+            gkLog('LOW', 'STT keepAlive: restart');
+            const cur = document.getElementById('micTx').textContent.trim();
+            if (cur) document.getElementById('micTx').dataset.accumulated = cur;
+            await capSR.removeAllListeners().catch(()=>{});
+            await capSR.addListener('partialResults', data => {
+              if (data.matches?.length) {
+                const prev = document.getElementById('micTx').dataset.accumulated || '';
+                document.getElementById('micTx').textContent = prev ? prev + ' ' + data.matches[0] : data.matches[0];
+              }
+            });
+            await capSR.addListener('listeningState', d => gkLog('LOW', 'STT restart: ' + d.status));
+            await capSR.start({ language:'tr-TR', maxResults:2, partialResults:true, popup:false });
+          }
+        } catch(e) { /* sessiz */ }
+      }, 800);
+
+    } catch(e) {
+      toast('Ses hatası: ' + e.message, '#E85D24');
+      gkLog('WARN', 'STT hata: ' + e.message);
+      stopListening();
+    }
+
+  } else {
+    if (!recognition) return;
+    isListening = true;
+    try { recognition.start(); } catch(e) { isListening = false; return; }
+    document.getElementById('micBtn')?.classList.add('micon');
+    document.getElementById('sesPttBtn')?.classList.add('active');
+    document.getElementById('micWaveSvg')?.style.setProperty('opacity','1');
+    document.getElementById('micStat').textContent = 'DİNLİYORUM...';
+    micWave();
+  }
 }
+
 function stopListening() {
-  isListening=false; try{recognition?.stop();}catch(e){}
-  document.getElementById('micOverlay').classList.remove('on');
-  document.getElementById('micBtn').classList.remove('micon');
-  document.getElementById('micTx').textContent='';
-  if(micAF) cancelAnimationFrame(micAF);
+  isListening = false;
+  if (window._sttKeepAlive) { clearInterval(window._sttKeepAlive); window._sttKeepAlive = null; }
+  const capSR = getCapSpeech();
+  if (capSR) {
+    capSR.stop().catch(() => {});
+    capSR.removeAllListeners().catch(() => {});
+  } else {
+    try { recognition?.stop(); } catch(e) {}
+  }
+  const final = document.getElementById('micTx').textContent.trim();
+  if (final) {
+    document.getElementById('micStat').textContent = 'GÖNDERİLİYOR...';
+    document.getElementById('chatTa').value = final;
+    sendMsg();
+    setTimeout(()=>{
+      document.getElementById('micTx').textContent = '';
+      document.getElementById('micStat').textContent = 'BASMAK İÇİN HAZIR';
+    }, 1000);
+  } else {
+    document.getElementById('micStat').textContent = 'BASMAK İÇİN HAZIR';
+  }
+  if (!isSesOverlayOpen) document.getElementById('micOverlay').classList.remove('on');
+  document.getElementById('micBtn')?.classList.remove('micon');
+  document.getElementById('sesPttBtn')?.classList.remove('active');
+  document.getElementById('micWaveSvg')?.style.setProperty('opacity','0');
+  if (micAF) cancelAnimationFrame(micAF);
 }
 function micWave() {
   const path=document.getElementById('micWave'); const t0=Date.now();
   function d(){if(!isListening)return; micAF=requestAnimationFrame(d); const t=(Date.now()-t0)/210; const pts=Array.from({length:101},(_,i)=>{const x=(i/100)*280; const y=44+Math.sin(i*0.17+t)*17+Math.sin(i*0.41+t*1.25)*8; return `${x},${y}`;}); path.setAttribute('d','M'+pts.join(' L'));} d();
 }
 
+/* ════════════════════════════════════════
+   TTS ENGINE
+   ════════════════════════════════════════ */
+let ttsEnabled = false;
+let ttsAF = null;
+let isSpeaking = false;
+
+function initTTS() {
+  document.getElementById('sesModBackBtn').addEventListener('click', closeSesOverlay);
+
+  const pttBtn = document.getElementById('sesPttBtn');
+  pttBtn.addEventListener('click', () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      const micTxEl = document.getElementById('micTx');
+      micTxEl.textContent = '';
+      micTxEl.dataset.accumulated = '';
+      startListening();
+    }
+  });
+
+  const toggle = document.getElementById('ttsToggle');
+  const rateSlider = document.getElementById('ttsRate');
+  const rateVal = document.getElementById('ttsRateVal');
+
+  toggle.addEventListener('click', () => {
+    ttsEnabled = !ttsEnabled;
+    toggle.classList.toggle('active', ttsEnabled);
+    document.getElementById('ttsToggleLbl').textContent = ttsEnabled ? 'TTS ON' : 'TTS OFF';
+    gkLog('LOW', 'TTS: ' + (ttsEnabled ? 'aktif' : 'kapalı'));
+  });
+
+  rateSlider.addEventListener('input', () => {
+    rateVal.textContent = parseFloat(rateSlider.value).toFixed(1) + '×';
+  });
+}
+
+function getCapTTS() {
+  return window?.Capacitor?.Plugins?.TextToSpeech || null;
+}
+
+async function speakText(text) {
+  if (!ttsEnabled || !text) return;
+  const capTTS = getCapTTS();
+  const rate = parseFloat(document.getElementById('ttsRate').value);
+  const clean = text.replace(/<[^>]*>/g, '').trim();
+  if (!clean) return;
+
+  await stopSpeaking();
+  isSpeaking = true;
+  showTtsWave();
+
+  if (capTTS) {
+    try {
+      await capTTS.speak({ text: clean, lang: 'tr-TR', rate, pitch: 1.0, volume: 1.0, category: 'ambient' });
+    } catch(e) {
+      gkLog('WARN', 'TTS hata: ' + e.message);
+    } finally { stopTtsWave(); }
+  } else if (window.speechSynthesis) {
+    const utt = new SpeechSynthesisUtterance(clean);
+    utt.lang = 'tr-TR'; utt.rate = rate;
+    utt.onend = () => stopTtsWave();
+    utt.onerror = () => stopTtsWave();
+    window.speechSynthesis.speak(utt);
+  } else { stopTtsWave(); }
+}
+
+async function stopSpeaking() {
+  if (!isSpeaking) return;
+  const capTTS = getCapTTS();
+  if (capTTS) { await capTTS.stop().catch(()=>{}); }
+  else { window.speechSynthesis?.cancel(); }
+  stopTtsWave();
+}
+
+function showTtsWave() {
+  const row = document.getElementById('sesTtsRow');
+  if (row) row.style.display = 'flex';
+  const path = document.getElementById('ttsWavePath');
+  const t0 = Date.now();
+  function d() {
+    if (!isSpeaking) return;
+    ttsAF = requestAnimationFrame(d);
+    const t = (Date.now()-t0)/180;
+    const pts = Array.from({length:61},(_,i)=>{
+      const x=(i/60)*180;
+      const y=18+Math.sin(i*0.22+t)*9+Math.sin(i*0.55+t*1.4)*4;
+      return `${x},${y}`;
+    });
+    path.setAttribute('d','M'+pts.join(' L'));
+  }
+  d();
+}
+
+function stopTtsWave() {
+  isSpeaking = false;
+  if (ttsAF) cancelAnimationFrame(ttsAF);
+  const row = document.getElementById('sesTtsRow');
+  if (row) row.style.display = 'none';
+}
+
 /* ── Yardımcılar ── */
 function fmtT(d){return d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function insertQ(t){document.getElementById('chatTa').value=t; document.getElementById('chatTa').focus();}
+
+/* team.js modülüne taşındı */
 
 /* ── Events ── */
 function initEvents() {
@@ -1008,14 +1554,21 @@ function initEvents() {
   document.getElementById('gkBtn').addEventListener('click',()=>document.getElementById('gkDrawer').classList.contains('open')?closeGk():openGk());
   document.getElementById('gkClose').addEventListener('click', closeGk);
   document.getElementById('micBtn').addEventListener('click',()=>isListening?stopListening():startListening());
-  document.getElementById('micStop').addEventListener('click', stopListening);
+  const micStopEl = document.getElementById('micStop');
+  if (micStopEl) micStopEl.addEventListener('click', () => {
+    if (isSesOverlayOpen) { closeSesOverlay(); } else { stopListening(); }
+  });
   document.addEventListener('keydown', e=>{
     if(e.key!=='Escape') return;
+    if(isSpeaking){stopSpeaking();return;}
     if(isListening){stopListening();return;}
+    if(isSesOverlayOpen){closeSesOverlay();return;}
     if(document.getElementById('gkDrawer').classList.contains('open')){closeGk();return;}
     if(document.getElementById('sesDrawer').classList.contains('open')){closeSes();return;}
-    if(isPersonaOpen){closePersona();return;}
-    if(isVaultOpen){closeVault();return;}
+    if(window.isPersonaOpen){window.closePersona();return;}
+    if(window.isVaultOpen){window.closeVault();return;}
+    if(window.isSaglikOpen){window.closeSaglik();return;}
+    if(window.isTeamOpen){window.closeTeam();return;}
     if(isChatOpen){closeChat();return;}
   });
   setInterval(()=>{ document.getElementById('topTime').textContent=fmtT(new Date()); },1000);
@@ -1023,287 +1576,28 @@ function initEvents() {
   document.getElementById('sesLabel').textContent=sesId;
 }
 
-/* ════════════════════════════════════════
-   PERSONA ENGINE
-   ════════════════════════════════════════ */
-let isPersonaOpen = false;
-let pWindow = 'all';
-const PDEMO = {
-  window:'all', total_messages:198, sessions:21, avg_messages_per_session:9.4,
-  longest_session:76, peak_hour:2, peak_day:'Per',
-  input_tokens:387000, output_tokens:11900,
-  top_trigrams:[
-    {ngram:'yapay zekanın hafıza kazanma',count:2,pct:89},
-    {ngram:'sistem prompt inşa edilir',count:8,pct:76},
-    {ngram:'soul agent cache aktif',count:6,pct:62},
-    {ngram:'gatekeeper risk sınıflandır',count:5,pct:51},
-  ],
-  leitmotif:'yapay zekanın hafıza <em>kazanma hikayesi</em>',
-  heatmap: (()=>{
-    const hm={};
-    for(let h=0;h<24;h++){hm[h]={};for(let d=0;d<7;d++){
-      let v=Math.random()*.2;
-      if(h>=0&&h<=4&&d>=3&&d<=5) v=.55+Math.random()*.45;
-      else if(h>=22||h<=2) v=.25+Math.random()*.45;
-      else if(h>=10&&h<=14&&d>=1&&d<=5) v=.2+Math.random()*.3;
-      hm[h][d]=v;
-    }}return hm;
-  })()
-};
+/* persona.js modülüne taşındı */
 
-function fmtK(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return String(n);}
+/* vault.js modülüne taşındı */
 
-function pCountUp(el,target,dur,isFloat){
-  const s=performance.now();
-  const u=now=>{
-    const p=Math.min((now-s)/dur,1),e=1-Math.pow(1-p,3);
-    el.textContent=isFloat?(target*e).toFixed(1):Math.round(target*e);
-    if(p<1)requestAnimationFrame(u);else el.textContent=isFloat?target.toFixed(1):target;
-  };requestAnimationFrame(u);
-}
-
-function buildPHeatmap(){
-  const labels=document.getElementById('pHmLabels');
-  const days=document.getElementById('pHmDays');
-  const grid=document.getElementById('pHmGrid');
-  labels.innerHTML='';days.innerHTML='';grid.innerHTML='';
-  ['00','','','04','','','','08','','','','12','','','','16','','','','20','','','',''].forEach(t=>{
-    const d=document.createElement('div');d.className='p-hm-lbl';d.textContent=t;labels.appendChild(d);
-  });
-  ['PZT','SAL','ÇRŞ','PRS','CUM','CMT','PAZ'].forEach(t=>{
-    const d=document.createElement('div');d.className='p-hm-dlbl';d.textContent=t;days.appendChild(d);
-  });
-  window._pCells=[];
-  for(let h=0;h<24;h++)for(let d=0;d<7;d++){
-    const c=document.createElement('div');c.className='p-hm-cell';
-    c.title=`${String(h).padStart(2,'0')}:00 · ${['Pzt','Sal','Çrş','Prş','Cum','Cmt','Paz'][d]}`;
-    grid.appendChild(c);window._pCells.push({c,h,d});
-  }
-}
-
-function fillPHeatmap(hmRaw){
-  // API format: heatmap[weekday][hour] — 7×24
-  // grid order: row=hour, col=weekday
-  if(!window._pCells||!hmRaw)return;
-  let max=0;
-  for(let d=0;d<7;d++)for(let h=0;h<24;h++){const v=hmRaw[d]?.[h]||0;if(v>max)max=v;}
-  if(!max)max=1;
-  window._pCells.forEach(({c,h,d},i)=>{
-    const v=(hmRaw[d]?.[h]||0)/max;
-    c.style.background=`rgba(45,212,191,${(.03+v*.82).toFixed(3)})`;
-    if(v>.7)c.style.boxShadow=`0 0 4px rgba(45,212,191,${(v*.5).toFixed(2)})`;
-    setTimeout(()=>c.style.opacity='1',i*1.2);
-  });
-}
-
-function renderPersonaData(data){
-  const d=data||PDEMO;
-
-  // ── meta
-  const start=d.date_range?.start?new Date(d.date_range.start).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}):'—';
-  const end=d.date_range?.end?new Date(d.date_range.end).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}):'—';
-  document.getElementById('personaMeta').textContent=`v1.0 · ${d.total_messages||0} mesaj · ${start}–${end} · read-only`;
-
-  // ── stats
-  const dayNames=['Paz','Pzt','Sal','Çrş','Per','Cum','Cmt'];
-  const peakH=d.time_pattern?.peak_hour??d.peak_hour??2;
-  const peakDi=d.time_pattern?.peak_weekday??3;
-  document.getElementById('ps-peak').textContent=`${dayNames[peakDi]} ${String(peakH).padStart(2,'0')}:00`;
-  pCountUp(document.getElementById('ps-ses'), d.session_pattern?.total_sessions||d.sessions||27, 900, false);
-  pCountUp(document.getElementById('ps-avg'), d.session_pattern?.avg_messages_per_session||d.avg_messages_per_session||9.1, 1000, true);
-  pCountUp(document.getElementById('ps-long'), d.session_pattern?.longest_session||d.longest_session||76, 1100, false);
-
-  // ── tokens
-  const inp=d.token_usage?.total_input_tokens||d.input_tokens||559219;
-  const out=d.token_usage?.total_output_tokens||d.output_tokens||16798;
-  const inpEl=document.getElementById('ps-inp'),outEl=document.getElementById('ps-out');
-  const s0=performance.now();
-  const uInp=n=>{const p=Math.min((n-s0)/1400,1),e=1-Math.pow(1-p,3);inpEl.textContent=fmtK(Math.round(inp*e));if(p<1)requestAnimationFrame(uInp);else inpEl.textContent=fmtK(inp);};requestAnimationFrame(uInp);
-  const s1=performance.now();
-  const uOut=n=>{const p=Math.min((n-s1)/1400,1),e=1-Math.pow(1-p,3);outEl.textContent=fmtK(Math.round(out*e));if(p<1)requestAnimationFrame(uOut);else outEl.textContent=fmtK(out);};requestAnimationFrame(uOut);
-  setTimeout(()=>{
-    document.getElementById('ps-inp-bar').style.width='97%';
-    // output oranını görünür kıl ama gerçek oranı yansıt
-    const outPct=Math.max((out/inp)*100*6, 3);
-    document.getElementById('ps-out-bar').style.width=Math.min(outPct,90)+'%';
-  },350);
-  document.getElementById('ps-ratio').innerHTML=
-    `<strong style="color:var(--teal)">${(inp/out).toFixed(1)}×</strong> input/output · avg output/msg: <strong style="color:var(--purple)">${d.token_usage?.avg_output_per_msg||136.6}</strong> token`;
-
-  // ── trigrams (gerçek API: frequency.top_trigrams[].term + count)
-  const tgEl=document.getElementById('pTgRows');tgEl.innerHTML='';
-  const trigrams=d.frequency?.top_trigrams||d.top_trigrams||PDEMO.top_trigrams;
-  const maxCount=trigrams[0]?.count||1;
-  trigrams.slice(0,5).forEach((tg,i)=>{
-    const pct=Math.round((tg.count/maxCount)*100);
-    const label=tg.term||tg.ngram||'—';
-    const row=document.createElement('div');row.className='p-tg-row';
-    row.innerHTML=`<div class="p-tg-hd"><span class="p-tg-word">${label}</span><span class="p-tg-pct" id="ptgp${i}">0%</span></div><div class="p-tg-track"><div class="p-tg-fill" id="ptgf${i}"></div></div>`;
-    tgEl.appendChild(row);
-    setTimeout(()=>{
-      document.getElementById(`ptgf${i}`).style.width=pct+'%';
-      let c=0;const iv=setInterval(()=>{c=Math.min(c+3,pct);document.getElementById(`ptgp${i}`).textContent=c+'%';if(c>=pct)clearInterval(iv);},16);
-    },380+i*80);
-  });
-
-  // ── leitmotif — top trigram'dan otomatik
-  const lm=trigrams[0]?.term||trigrams[0]?.ngram||'—';
-  document.getElementById('ps-lm').innerHTML=`"${lm}"`;
-
-  // ── heatmap — gerçek format: time_pattern.heatmap[weekday][hour]
-  fillPHeatmap(d.time_pattern?.heatmap||PDEMO.heatmap);
-}
-
-async function fetchPersona(win){
-  try{
-    const r=await fetch(`${SOUL_API}/api/persona/snapshot?window=${win}`,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return await r.json();
-  }catch(e){ return PDEMO; }
-}
-
-function openPersona(){
-  buildPHeatmap();
-  window.warpOpen(async()=>{
-    document.getElementById('personaOverlay').classList.add('open');
-    isPersonaOpen=true;
-    const data=await fetchPersona(pWindow);
-    renderPersonaData(data);
-  });
-}
-function closePersona(){
-  window.warpClose(()=>{document.getElementById('personaOverlay').classList.remove('open');isPersonaOpen=false;});
-}
-
-function initPersona(){
-  document.getElementById('personaBackBtn').addEventListener('click',closePersona);
-  document.querySelectorAll('.p-win-btn').forEach(btn=>{
-    btn.addEventListener('click',async()=>{
-      if(btn.dataset.pw===pWindow)return;
-      document.querySelectorAll('.p-win-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active'); pWindow=btn.dataset.pw;
-      const data=await fetchPersona(pWindow);
-      renderPersonaData(data);
-    });
-  });
-}
-
-/* ════════════════════════════════════════
-   VAULT · HAFİZA
-   ════════════════════════════════════════ */
-let isVaultOpen = false;
-
-function vMdLite(raw) {
-  // minimal markdown → spans, no heavy libs
-  return raw
-    .replace(/^## (.+)$/gm, '<span class="md-h2">## $1</span>')
-    .replace(/\*\*(.+?)\*\*/g, '<span class="md-bold">$1</span>')
-    .replace(/^- (.+)$/gm, '<span class="md-li">· $1</span>');
-}
-
-function vFmtDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('tr-TR', {day:'2-digit',month:'short',year:'numeric'})
-       + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
-}
-
-function vTypeBadge(entry_type) {
-  if (entry_type === 'core') return 'core';
-  if (entry_type === 'daily_summary') return 'daily';
-  return 'memory';
-}
-
-function vTypeLabel(entry_type) {
-  if (entry_type === 'core') return 'CORE';
-  if (entry_type === 'daily_summary') return 'DAILY';
-  return 'MEMORY';
-}
-
-function renderVaultList(entries) {
-  const list = document.getElementById('vaultList');
-  list.innerHTML = '';
-  if (!entries || !entries.length) {
-    list.innerHTML = '<div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);padding:20px;text-align:center;">kayıt yok</div>';
-    return;
-  }
-  entries.forEach((entry, i) => {
-    const card = document.createElement('div');
-    card.className = 'v-card';
-    const badge = vTypeBadge(entry.entry_type);
-    const label = vTypeLabel(entry.entry_type);
-    card.innerHTML = `
-      <div class="v-card-hd">
-        <span class="v-type ${badge}">${label}</span>
-        <span class="v-key">${entry.key}</span>
-        <span class="v-date">${vFmtDate(entry.updated_at)}</span>
-        <span class="v-chevron">▼</span>
-      </div>
-      <div class="v-card-body">
-        <div class="v-content">${vMdLite(entry.value||'')}</div>
-      </div>`;
-    card.querySelector('.v-card-hd').addEventListener('click', () => {
-      card.classList.toggle('expanded');
-    });
-    // core_identity ilk açılışta expanded gelsin
-    if (entry.entry_type === 'core') card.classList.add('expanded');
-    list.appendChild(card);
-  });
-}
-
-function renderScout(summary) {
-  const by = summary.by_status || {};
-  document.getElementById('sc-active').textContent   = by.active   || 0;
-  document.getElementById('sc-passive').textContent  = by.passive  || 0;
-  document.getElementById('sc-archived').textContent = by.archived || 0;
-  document.getElementById('vaultBadge').textContent  = `SCOUT · ${summary.total || 0} KAYIT`;
-  document.getElementById('scoutMeta').innerHTML =
-    `<strong>toplam:</strong> ${summary.total || 0}<br>` +
-    `<strong>son güncelleme:</strong><br>${vFmtDate(summary.last_update)}`;
-}
-
-async function fetchVault() {
-  try {
-    const [memResp, scoutResp] = await Promise.all([
-      fetch(`${SOUL_API}/api/memory`, {signal: AbortSignal.timeout(6000)}),
-      fetch(`${SOUL_API}/api/scout/summary`, {signal: AbortSignal.timeout(6000)})
-    ]);
-    const entries = memResp.ok  ? await memResp.json()  : [];
-    const scout   = scoutResp.ok? await scoutResp.json(): {total:0,by_status:{}};
-    return {entries, scout};
-  } catch(e) {
-    return {entries:[], scout:{total:0,by_status:{},last_update:null}};
-  }
-}
-
-function openVault() {
-  window.warpOpen(async () => {
-    document.getElementById('vaultOverlay').classList.add('open');
-    isVaultOpen = true;
-    const {entries, scout} = await fetchVault();
-    document.getElementById('vaultMeta').textContent =
-      `${entries.length} kayıt · /api/memory + /api/scout/summary`;
-    renderVaultList(entries);
-    renderScout(scout);
-  });
-}
-
-function closeVault() {
-  window.warpClose(() => {
-    document.getElementById('vaultOverlay').classList.remove('open');
-    isVaultOpen = false;
-  });
-}
-
-function initVault() {
-  document.getElementById('vaultBackBtn').addEventListener('click', closeVault);
-}
+/* saglik.js modülüne taşındı */
 
 function boot() {
-  initMatrix(); initWarp(); buildPortal(); initVoice(); initEvents(); initPersona(); initVault();
+  initMatrix(); initWarp(); buildPortal(); initVoice(); initEvents();
+  window.initPersona?.(); window.initVault?.(); window.initSaglik?.();
+  initTTS(); window.initTeam?.(); window.initGorev?.();
   gkLog('LOW','Portal v2.1 boot · '+sesId);
 }
-boot();
+document.addEventListener('DOMContentLoaded', () => {
+  boot();
+});
 </script>
+
+<!-- Modüller ana script'ten sonra, DOMContentLoaded'dan önce yüklenir -->
+<script src="modules/vault.js"></script>
+<script src="modules/persona.js"></script>
+<script src="modules/saglik.js"></script>
+<script src="modules/team.js"></script>
+<script src="modules/gorev.js"></script>
 </body>
 </html>

@@ -25,6 +25,14 @@ app.add_middleware(
 
 app.include_router(router, prefix="/api")
 
+from api.persona import router as persona_router
+from fastapi.responses import FileResponse
+app.include_router(persona_router, prefix="/api/persona", tags=["persona"])
+
+@app.get("/persona", response_class=FileResponse)
+async def persona_page():
+    return FileResponse("static/persona.html")
+
 static_dir = Path("static")
 if static_dir.exists():
     app.mount("/", StaticFiles(directory="static", html=True), name="static")

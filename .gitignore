@@ -8,3 +8,10 @@ memory/*.db
 .DS_Store
 bridge.log
 *.bak
+bridge.log
+nohup.out
+*.log
+*.bak*
+static/YEDEK.html
+static/test.html
+static/lab.html

@@ -258,3 +258,59 @@ async def speak(req: SpeakRequest):
 @router.get("/speak/voices")
 async def speak_voices():
     return {"voices": VOICES, "default": "tr"}
+
+# --- GÖREV ---
+import uuid as _uuid
+from datetime import datetime as _dt
+
+def _gorev_db():
+    import sqlite3
+    con = sqlite3.connect("/home/ismail/theia-soul/soul.db")
+    con.row_factory = sqlite3.Row
+    con.execute("""CREATE TABLE IF NOT EXISTS gorevler (
+        id TEXT PRIMARY KEY,
+        baslik TEXT NOT NULL,
+        tarih TEXT,
+        saat TEXT,
+        hat TEXT,
+        tekrar TEXT DEFAULT 'yok',
+        kat TEXT DEFAULT 'kisisel',
+        tur TEXT DEFAULT 'gorev',
+        done INTEGER DEFAULT 0,
+        done_at TEXT,
+        created TEXT
+    )""")
+    con.commit()
+    return con
+
+@router.get("/gorev")
+async def gorev_list():
+    con = _gorev_db()
+    rows = con.execute("SELECT * FROM gorevler ORDER BY tarih, saat").fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+@router.post("/gorev", status_code=201)
+async def gorev_create(body: dict):
+    con = _gorev_db()
+    gid = str(_uuid.uuid4())
+    con.execute("""INSERT INTO gorevler (id,baslik,tarih,saat,hat,tekrar,kat,tur,done,created)
+        VALUES (?,?,?,?,?,?,?,?,0,?)""",
+        (gid, body.get("baslik",""), body.get("tarih",""), body.get("saat",""),
+         body.get("hat",""), body.get("tekrar","yok"), body.get("kat","kisisel"),
+         body.get("tur","gorev"), _dt.now().isoformat()))
+    con.commit(); con.close()
+    return {"id": gid}
+
+@router.patch("/gorev/{gid}/done", status_code=204)
+async def gorev_done(gid: str):
+    con = _gorev_db()
+    con.execute("UPDATE gorevler SET done=1, done_at=? WHERE id=?",
+        (_dt.now().isoformat(), gid))
+    con.commit(); con.close()
+
+@router.delete("/gorev/{gid}", status_code=204)
+async def gorev_delete(gid: str):
+    con = _gorev_db()
+    con.execute("DELETE FROM gorevler WHERE id=?", (gid,))
+    con.commit(); con.close()

@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THEIA · HUD</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #03020a;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.07);
+  --text: rgba(255,255,255,0.85);
+  --muted: rgba(255,255,255,0.35);
+  --dim: rgba(255,255,255,0.12);
+  --purple: #7C6EF5;
+  --green: #1D9E75;
+  --orange: #EF9F27;
+  --red: #E85D24;
+  --blue: #4FA8D5;
+  --pink: #C77DFF;
+  --gold: #E8B86D;
+  --teal: #2DD4BF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── THREE.JS BG ─────────────────────────────────────────────────────────── */
+#bg-canvas {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+
+/* ── APP SHELL ───────────────────────────────────────────────────────────── */
+.app {
+  display: flex;
+  height: 100vh;
+  position: relative; z-index: 1;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: rgba(3,2,10,0.82);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.sidebar-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px; font-weight: 900; letter-spacing: .22em;
+  color: var(--purple);
+  text-shadow: 0 0 20px rgba(124,110,245,0.55);
+}
+.logo span { color: var(--teal); }
+
+.new-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: rgba(124,110,245,0.1); border: 1px solid rgba(124,110,245,0.35);
+  color: var(--purple); font-size: 18px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.new-btn:hover { background: rgba(124,110,245,0.2); }
+
+.sidebar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--dim); padding: 12px 16px 6px;
+  flex-shrink: 0;
+}
+
+.session-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+.session-list::-webkit-scrollbar { width: 3px; }
+.session-list::-webkit-scrollbar-track { background: transparent; }
+.session-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.session-item {
+  padding: 9px 10px 8px;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s ease;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+}
+.session-item:hover { background: var(--surface); border-color: var(--border); }
+.session-item.active {
+  background: rgba(124,110,245,0.08);
+  border-color: rgba(124,110,245,0.25);
+}
+.session-item-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.session-item.active .session-item-title { color: var(--purple); }
+.session-item-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--muted); letter-spacing: .04em;
+}
+
+/* ── MOBILE CHIPS (sessions) ─────────────────────────────────────────────── */
+.mobile-chips {
+  display: none;
+  overflow-x: auto; flex-shrink: 0;
+  padding: 8px 12px;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(3,2,10,0.9);
+  backdrop-filter: blur(12px);
+  scrollbar-width: none;
+}
+.mobile-chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em;
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.15s ease;
+}
+.chip:hover { border-color: rgba(124,110,245,0.35); color: var(--text); }
+.chip.active { border-color: var(--purple); color: var(--purple); background: rgba(124,110,245,0.08); }
+.chip-new {
+  color: var(--purple); border-color: rgba(124,110,245,0.4);
+  background: rgba(124,110,245,0.06);
+}
+
+/* ── CHAT AREA ───────────────────────────────────────────────────────────── */
+.chat-area {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+}
+
+.chat-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(3,2,10,0.75);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  position: relative;
+}
+.chat-hdr::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124,110,245,0.25), transparent);
+}
+
+.chat-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: .1em;
+  color: var(--muted); text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1;
+}
+
+.chat-hdr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.model-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .12em;
+  padding: 3px 9px; border-radius: 4px; text-transform: uppercase;
+  background: rgba(124,110,245,0.08); border: 1px solid rgba(124,110,245,0.25); color: var(--purple);
+}
+
+/* ── MESSAGES ────────────────────────────────────────────────────────────── */
+.messages {
+  flex: 1; overflow-y: auto;
+  padding: 20px 20px 8px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.msg { display: flex; flex-direction: column; max-width: 72%; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.assistant { align-self: flex-start; align-items: flex-start; }
+
+.msg-bubble {
+  padding: 12px 16px;
+  border-radius: 14px;
+  line-height: 1.65;
+  font-size: 14.5px;
+  position: relative;
+}
+.msg.user .msg-bubble {
+  background: rgba(124,110,245,0.1);
+  border: 1px solid rgba(124,110,245,0.3);
+  border-bottom-right-radius: 4px;
+  color: var(--text);
+}
+.msg.assistant .msg-bubble {
+  background: rgba(45,212,191,0.06);
+  border: 1px solid rgba(45,212,191,0.2);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.msg-meta {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 5px; padding: 0 2px;
+}
+.msg-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--dim);
+}
+.msg-model {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--dim); letter-spacing: .06em;
+}
+
+.info-btn {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  color: var(--muted); font-size: 10px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s ease; font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.info-btn:hover { border-color: rgba(45,212,191,0.4); color: var(--teal); }
+.info-btn.active { border-color: var(--teal); color: var(--teal); background: rgba(45,212,191,0.08); }
+
+/* Inline soul ctx (mobile/tablet) */
+.soul-inline {
+  display: none;
+  margin-top: 6px;
+  background: rgba(45,212,191,0.04);
+  border: 1px solid rgba(45,212,191,0.15);
+  border-radius: 10px; overflow: hidden;
+  max-height: 0; transition: max-height 0.35s ease;
+}
+.soul-inline.open { max-height: 600px; }
+
+/* Markdown in messages */
+.msg-bubble p { margin-bottom: 8px; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble h1,.msg-bubble h2,.msg-bubble h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--purple); margin: 12px 0 6px; font-size: 14px;
+}
+.msg-bubble strong { color: var(--gold); font-weight: 600; }
+.msg-bubble em { color: var(--teal); font-style: italic; }
+.msg-bubble code {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px;
+  color: var(--pink);
+}
+.msg-bubble pre {
+  background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+  border-radius: 8px; overflow-x: auto; margin: 10px 0;
+}
+.msg-bubble pre code {
+  background: none; padding: 14px 16px; display: block;
+  font-size: 12px; color: var(--text); border-radius: 0;
+}
+.msg-bubble ul,.msg-bubble ol { padding-left: 20px; margin-bottom: 8px; }
+.msg-bubble li { margin-bottom: 3px; }
+.msg-bubble blockquote {
+  border-left: 3px solid var(--purple); padding-left: 12px;
+  color: var(--muted); margin: 8px 0;
+}
+.msg-bubble a { color: var(--purple); text-decoration: none; }
+.msg-bubble a:hover { text-decoration: underline; }
+.msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+/* Typing indicator */
+.typing-dot {
+  display: inline-flex; gap: 4px; padding: 4px 0; align-items: center;
+}
+.typing-dot span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+  animation: blink 1.4s ease-in-out infinite;
+}
+.typing-dot span:nth-child(2) { animation-delay: .2s; }
+.typing-dot span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100%{opacity:.15} 40%{opacity:1} }
+
+/* ── INPUT AREA ──────────────────────────────────────────────────────────── */
+.input-wrap {
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--border);
+  background: rgba(3,2,10,0.8);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+
+.input-row {
+  display: flex; align-items: flex-end; gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 10px 8px 12px;
+  transition: border-color 0.2s;
+}
+.input-row:focus-within { border-color: rgba(124,110,245,0.4); }
+
+.model-sel {
+  background: transparent; border: none; outline: none;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--purple); cursor: pointer;
+  padding: 4px 2px; flex-shrink: 0;
+  appearance: none; -webkit-appearance: none;
+  min-width: 52px;
+}
+.model-sel option { background: #0d0b1a; color: var(--text); font-size: 12px; }
+
+.input-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; align-self: center; }
+
+.msg-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 15px;
+  resize: none; max-height: 160px; overflow-y: auto;
+  line-height: 1.55; padding: 2px 0;
+}
+.msg-input::placeholder { color: var(--dim); }
+.msg-input::-webkit-scrollbar { width: 3px; }
+.msg-input::-webkit-scrollbar-thumb { background: var(--border); }
+
+.send-btn {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: rgba(124,110,245,0.15); border: 1px solid rgba(124,110,245,0.4);
+  color: var(--purple); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.send-btn:hover { background: rgba(124,110,245,0.3); }
+.send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.input-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--dim); letter-spacing: .08em;
+  text-align: center; margin-top: 6px;
+}
+
+/* ── SOUL PANEL (desktop right) ──────────────────────────────────────────── */
+.soul-panel {
+  width: 0; flex-shrink: 0;
+  overflow: hidden;
+  border-left: 0px solid var(--border);
+  background: rgba(3,2,10,0.88);
+  backdrop-filter: blur(16px);
+  display: flex; flex-direction: column;
+  transition: width 0.3s ease, border-left-width 0.3s ease;
+}
+.soul-panel.open {
+  width: 320px;
+  border-left-width: 1px;
+}
+.soul-panel-inner {
+  width: 320px; height: 100%;
+  display: flex; flex-direction: column;
+}
+
+.soul-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.soul-hdr-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--teal);
+}
+.soul-close {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+.soul-close:hover { border-color: rgba(232,93,36,0.4); color: var(--red); }
+
+.soul-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.soul-body::-webkit-scrollbar { width: 3px; }
+.soul-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Soul context blocks */
+.ctx-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ctx-block-hdr {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase;
+}
+.ctx-block-hdr .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+}
+.ctx-block-body {
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; line-height: 1.6; color: var(--muted);
+}
+.ctx-block-body .val { color: var(--text); font-size: 12px; }
+.ctx-block-body .na { color: var(--dim); font-style: italic; }
+.ctx-block-body .metric-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.ctx-block-body .metric-row:last-child { margin-bottom: 0; }
+.ctx-block-body .metric-k { color: var(--dim); }
+.ctx-block-body .metric-v { color: var(--gold); }
+
+/* ── EMPTY STATE ─────────────────────────────────────────────────────────── */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 40px 20px; text-align: center;
+}
+.empty-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px; font-weight: 900; letter-spacing: .12em;
+  color: rgba(255,255,255,0.06);
+  text-shadow: 0 0 60px rgba(124,110,245,0.15);
+}
+.empty-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: .18em; color: var(--dim);
+  text-transform: uppercase;
+}
+
+/* ── ERROR TOAST ─────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: rgba(232,93,36,0.12); border: 1px solid rgba(232,93,36,0.4);
+  color: var(--red); border-radius: 10px; padding: 10px 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  z-index: 999; opacity: 0; transition: all 0.3s ease; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .mobile-chips { display: flex; }
+  .app { flex-direction: column; }
+  .chat-area { flex: 1; }
+  .soul-panel { display: none; }
+  .soul-inline { display: block; }
+  .msg { max-width: 88%; }
+}
+
+@media (max-width: 767px) {
+  .msg { max-width: 95%; }
+  .messages { padding: 14px 12px 6px; gap: 12px; }
+  .input-wrap { padding: 10px 12px 14px; }
+  .chat-hdr { padding: 10px 14px; }
+  .chat-title { font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div class="app" id="app">
+
+  <!-- SIDEBAR (desktop) -->
+  <div class="sidebar">
+    <div class="sidebar-hdr">
+      <div class="logo">THEIA<span>·</span>HUD</div>
+      <button class="new-btn" id="newBtnDesk" title="Yeni oturum">+</button>
+    </div>
+    <div class="sidebar-label">Oturumlar</div>
+    <div class="session-list" id="sessionListDesk"></div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area">
+
+    <!-- Mobile chips -->
+    <div class="mobile-chips" id="mobileChips"></div>
+
+    <!-- Chat header -->
+    <div class="chat-hdr">
+      <div class="chat-title" id="chatTitle">Oturum Seç veya Başlat</div>
+      <div class="chat-hdr-right">
+        <div class="model-badge" id="modelBadge">claude</div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-logo">THEIA</div>
+        <div class="empty-sub">Sohbet başlatmak için mesaj gönder</div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-wrap">
+      <div class="input-row">
+        <select class="model-sel" id="modelSelect">
+          <option value="claude">Claude</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="kimi">Kimi</option>
+          <option value="ollama">Ollama</option>
+        </select>
+        <div class="input-sep"></div>
+        <textarea class="msg-input" id="msgInput" placeholder="Mesajını yaz…" rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">↑</button>
+      </div>
+      <div class="input-hint">Enter → gönder &nbsp;·&nbsp; Shift+Enter → yeni satır</div>
+    </div>
+  </div>
+
+  <!-- SOUL PANEL (desktop right) -->
+  <div class="soul-panel" id="soulPanel">
+    <div class="soul-panel-inner">
+      <div class="soul-hdr">
+        <div class="soul-hdr-title">Soul Context</div>
+        <button class="soul-close" id="soulClose">×</button>
+      </div>
+      <div class="soul-body" id="soulBody">
+        <div class="ctx-block">
+          <div class="ctx-block-body" style="color:var(--dim);font-style:italic;">
+            Bir mesajın yanındaki ⓘ butonuna tıkla.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── THREE.JS PARTICLE BACKGROUND ─────────────────────────────────────────────
+(function initBg() {
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
+  camera.position.z = 400;
+
+  // Soft dot texture
+  function makeTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0,   'rgba(255,255,255,1)');
+    g.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+    g.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  }
+
+  const isMobile = window.innerWidth < 768;
+  const COUNT = isMobile ? 500 : 1000;
+  const Z_NEAR = 100, Z_FAR = -1200;
+  const COLORS = [0x7C6EF5, 0x2DD4BF, 0xE8B86D, 0xC77DFF, 0x4FA8D5];
+
+  // Separate particle group per color for individual materials
+  const groups = COLORS.map(color => {
+    const n = Math.floor(COUNT / COLORS.length);
+    const positions = new Float32Array(n * 3);
+    const phases    = new Float32Array(n);
+
+    for (let i = 0; i < n; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 1400;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 900;
+      positions[i * 3 + 2] = Z_FAR + Math.random() * (Z_NEAR - Z_FAR);
+      phases[i] = Math.random() * Math.PI * 2;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const mat = new THREE.PointsMaterial({
+      color, size: 2.8 + Math.random() * 1.4,
+      map: makeTexture(),
+      transparent: true, opacity: 0.42,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false, sizeAttenuation: true,
+    });
+
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+    return { pts, phases };
+  });
+
+  // Mouse parallax
+  let mx = 0, my = 0, camRX = 0, camRY = 0;
+  window.addEventListener('mousemove', e => {
+    mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Speed per group (slightly varied)
+  const speeds = COLORS.map((_, i) => 0.55 + i * 0.08);
+
+  let raf = null;
+  function animate() {
+    if (document.hidden) { raf = requestAnimationFrame(animate); return; }
+
+    groups.forEach(({ pts, phases }, gi) => {
+      const pos = pts.geometry.attributes.position;
+      const n = pos.count;
+      const spd = speeds[gi];
+
+      for (let i = 0; i < n; i++) {
+        let z = pos.getZ(i) + spd;
+        // Horizontal drift
+        let x = pos.getX(i) + Math.sin(phases[i] + z * 0.002) * 0.18;
+        if (z > Z_NEAR) {
+          z = Z_FAR;
+          x = (Math.random() - 0.5) * 1400;
+          pos.setY(i, (Math.random() - 0.5) * 900);
+          phases[i] = Math.random() * Math.PI * 2;
+        }
+        pos.setX(i, x);
+        pos.setZ(i, z);
+      }
+      pos.needsUpdate = true;
+    });
+
+    // Smooth parallax tilt (max ~3 deg)
+    const targetRX = my * 0.04;
+    const targetRY = mx * 0.04;
+    camRX += (targetRX - camRX) * 0.04;
+    camRY += (targetRY - camRY) * 0.04;
+    camera.rotation.x = camRX;
+    camera.rotation.y = camRY;
+
+    renderer.render(scene, camera);
+    raf = requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+})();
+
+// ── MARKDOWN ──────────────────────────────────────────────────────────────────
+const renderer = new marked.Renderer();
+renderer.code = (token) => {
+  const code = typeof token === 'object' ? token.text : token;
+  const lang = typeof token === 'object' ? token.lang : '';
+  let highlighted;
+  try {
+    highlighted = lang && hljs.getLanguage(lang)
+      ? hljs.highlight(code, { language: lang }).value
+      : hljs.highlightAuto(code).value;
+  } catch { highlighted = code; }
+  return `<pre><code class="hljs ${lang||''}">${highlighted}</code></pre>`;
+};
+marked.use({ renderer, breaks: true, gfm: true });
+
+function renderMD(text) {
+  try { return marked.parse(text || ''); }
+  catch { return text || ''; }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentSession = null;
+let isStreaming = false;
+let soulPanelOpen = false;
+let lastCtxData = null;
+
+const LS = {
+  getModel: () => localStorage.getItem('theia-model') || 'claude',
+  setModel: v => localStorage.setItem('theia-model', v),
+  getSoulOpen: () => localStorage.getItem('theia-soul-open') === '1',
+  setSoulOpen: v => localStorage.setItem('theia-soul-open', v ? '1' : '0'),
+};
+
+// ── DOM REFS ──────────────────────────────────────────────────────────────────
+const $messages    = document.getElementById('messages');
+const $chatTitle   = document.getElementById('chatTitle');
+const $modelBadge  = document.getElementById('modelBadge');
+const $modelSelect = document.getElementById('modelSelect');
+const $msgInput    = document.getElementById('msgInput');
+const $sendBtn     = document.getElementById('sendBtn');
+const $soulPanel   = document.getElementById('soulPanel');
+const $soulBody    = document.getElementById('soulBody');
+const $soulClose   = document.getElementById('soulClose');
+const $sessDesk    = document.getElementById('sessionListDesk');
+const $mobileChips = document.getElementById('mobileChips');
+const $emptyState  = document.getElementById('emptyState');
+const $toast       = document.getElementById('toast');
+
+// ── INIT MODEL ────────────────────────────────────────────────────────────────
+$modelSelect.value = LS.getModel();
+$modelBadge.textContent = $modelSelect.value;
+$modelSelect.addEventListener('change', () => {
+  LS.setModel($modelSelect.value);
+  $modelBadge.textContent = $modelSelect.value;
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  toastTimer = setTimeout(() => $toast.classList.remove('show'), 3500);
+}
+
+// ── SESSIONS ─────────────────────────────────────────────────────────────────
+async function loadSessions() {
+  try {
+    const res = await fetch('/api/sessions');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const sessions = await res.json();
+    renderSessions(sessions);
+  } catch (e) {
+    console.warn('[hud] sessions load error:', e);
+  }
+}
+
+function renderSessions(sessions) {
+  $sessDesk.innerHTML = '';
+  $mobileChips.innerHTML = '';
+
+  // New session button (mobile chips)
+  const chipNew = document.createElement('div');
+  chipNew.className = 'chip chip-new';
+  chipNew.textContent = '+ Yeni';
+  chipNew.addEventListener('click', startNewSession);
+  $mobileChips.appendChild(chipNew);
+
+  // New session button (desktop)
+  document.getElementById('newBtnDesk').onclick = startNewSession;
+
+  sessions.forEach(s => {
+    const title = s.title || s.id.slice(0, 8) + '…';
+    const date  = s.updated_at ? new Date(s.updated_at).toLocaleDateString('tr-TR', { day:'numeric', month:'short' }) : '';
+    const isActive = currentSession === s.id;
+
+    // Desktop item
+    const item = document.createElement('div');
+    item.className = 'session-item' + (isActive ? ' active' : '');
+    item.innerHTML = `
+      <div class="session-item-title">${escHtml(title)}</div>
+      <div class="session-item-meta">${escHtml(s.model||'')} · ${date}</div>
+    `;
+    item.addEventListener('click', () => selectSession(s.id, title, s.model));
+    $sessDesk.appendChild(item);
+
+    // Mobile chip
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (isActive ? ' active' : '');
+    chip.textContent = title.length > 14 ? title.slice(0,13)+'…' : title;
+    chip.addEventListener('click', () => selectSession(s.id, title, s.model));
+    $mobileChips.appendChild(chip);
+  });
+}
+
+async function selectSession(id, title, model) {
+  currentSession = id;
+  $chatTitle.textContent = title || id.slice(0, 8);
+  if (model) { $modelBadge.textContent = model; }
+  $emptyState?.remove();
+  $messages.innerHTML = '';
+  closeSoulPanel();
+
+  try {
+    const res = await fetch(`/api/sessions/${id}/messages`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const msgs = await res.json();
+    msgs.forEach(m => appendMessage(m.role, m.content, { model }));
+    scrollToBottom();
+  } catch (e) {
+    console.warn('[hud] load messages error:', e);
+    showToast('Mesajlar yüklenemedi: ' + e.message);
+  }
+
+  loadSessions();
+}
+
+function startNewSession() {
+  currentSession = 'msg-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
+  $chatTitle.textContent = 'Yeni Oturum';
+  $modelBadge.textContent = $modelSelect.value;
+  $messages.innerHTML = `
+    <div class="empty-state" id="emptyState">
+      <div class="empty-logo">THEIA</div>
+      <div class="empty-sub">Sohbet başlatmak için mesaj gönder</div>
+    </div>`;
+  closeSoulPanel();
+  loadSessions();
+}
+
+// ── CHAT ──────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const text = $msgInput.value.trim();
+  if (!text || isStreaming) return;
+
+  if (!currentSession) {
+    currentSession = 'msg-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
+    $chatTitle.textContent = 'Oturum #' + currentSession.slice(0, 6);
+  }
+
+  document.getElementById('emptyState')?.remove();
+
+  appendMessage('user', text, {});
+  $msgInput.value = '';
+  autoResize();
+  scrollToBottom();
+
+  isStreaming = true;
+  $sendBtn.disabled = true;
+
+  const model = $modelSelect.value;
+  $modelBadge.textContent = model;
+
+  // Typing indicator
+  const typingEl = appendMessage('assistant', null, { typing: true, model });
+  scrollToBottom();
+
+  try {
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        session_id: currentSession,
+        model: model,
+      }),
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let full = '';
+    const bubble = typingEl.querySelector('.msg-bubble');
+    bubble.innerHTML = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (data.chunk) {
+          full += data.chunk;
+          bubble.innerHTML = renderMD(full);
+          scrollToBottom();
+        }
+        if (data.done) {
+          currentSession = data.session_id || currentSession;
+        }
+      }
+    }
+
+    // Update info button with context
+    const infoBtn = typingEl.querySelector('.info-btn');
+    if (infoBtn) {
+      const ctxData = { model, text: full };
+      infoBtn.addEventListener('click', () => toggleSoulCtx(infoBtn, ctxData, typingEl));
+    }
+
+    // Warn: stream doesn't return tokens
+    console.warn('[hud] /api/chat/stream does not return token counts — Soul Context metrics N/A');
+
+    loadSessions();
+
+  } catch (e) {
+    typingEl.querySelector('.msg-bubble').innerHTML =
+      `<span style="color:var(--red)">Hata: ${escHtml(e.message)}</span>`;
+    showToast('Mesaj gönderilemedi: ' + e.message);
+  } finally {
+    isStreaming = false;
+    $sendBtn.disabled = false;
+  }
+}
+
+// ── MESSAGE RENDERING ─────────────────────────────────────────────────────────
+function appendMessage(role, content, opts = {}) {
+  const msgEl = document.createElement('div');
+  msgEl.className = 'msg ' + role;
+
+  const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+  if (opts.typing) {
+    msgEl.innerHTML = `
+      <div class="msg-bubble">
+        <div class="typing-dot"><span></span><span></span><span></span></div>
+      </div>
+      <div class="msg-meta">
+        <span class="msg-time">${time}</span>
+        <span class="msg-model">${escHtml(opts.model || '')}</span>
+      </div>`;
+  } else if (role === 'assistant') {
+    msgEl.innerHTML = `
+      <div class="msg-bubble">${renderMD(content)}</div>
+      <div class="msg-meta">
+        <button class="info-btn" title="Soul Context">ⓘ</button>
+        <span class="msg-time">${time}</span>
+        <span class="msg-model">${escHtml(opts.model || '')}</span>
+      </div>
+      <div class="soul-inline"></div>`;
+  } else {
+    msgEl.innerHTML = `
+      <div class="msg-bubble">${escHtml(content)}</div>
+      <div class="msg-meta">
+        <span class="msg-time">${time}</span>
+      </div>`;
+  }
+
+  $messages.appendChild(msgEl);
+  return msgEl;
+}
+
+// ── SOUL CONTEXT ──────────────────────────────────────────────────────────────
+async function buildCtxHtml(ctxData) {
+  const model = ctxData.model || '—';
+  let memoryHtml = '<span class="na">Hafıza yükleniyor…</span>';
+  let dailyHtml  = '<span class="na">—</span>';
+  let identHtml  = '<span class="na">—</span>';
+
+  try {
+    const [glbRes, sesRes] = await Promise.all([
+      fetch('/api/memory'),
+      currentSession ? fetch(`/api/memory/${currentSession}`) : Promise.resolve(null),
+    ]);
+
+    if (glbRes.ok) {
+      const entries = await glbRes.json();
+      const daily = entries.find(e => e.entry_type === 'daily_summary');
+      const ident = entries.find(e => e.key === 'core_identity' || e.key === 'identity');
+      const memEntries = entries.filter(e => e.entry_type !== 'daily_summary' && e.key !== 'core_identity').slice(0, 5);
+
+      if (daily) dailyHtml = `<span class="val">${escHtml(daily.value.slice(0, 220))}${daily.value.length > 220 ? '…' : ''}</span>`;
+      if (ident) identHtml = `<span class="val">${escHtml(ident.value.slice(0, 180))}${ident.value.length > 180 ? '…' : ''}</span>`;
+
+      if (memEntries.length) {
+        memoryHtml = memEntries.map(e =>
+          `<div style="margin-bottom:6px"><span class="metric-k">${escHtml(e.key)}</span><br>
+           <span class="val" style="font-size:10px">${escHtml(e.value.slice(0,100))}${e.value.length>100?'…':''}</span></div>`
+        ).join('');
+      } else {
+        memoryHtml = '<span class="na">Hafıza girişi yok</span>';
+      }
+    }
+
+    if (sesRes && sesRes.ok) {
+      const sesEntries = await sesRes.json();
+      if (sesEntries.length) {
+        memoryHtml += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:9px;color:var(--dim);letter-spacing:.1em">OTURUM HAFIZASI</div>`;
+        memoryHtml += sesEntries.slice(0, 3).map(e =>
+          `<div style="margin-top:4px"><span class="metric-k">${escHtml(e.key)}</span>: <span class="val">${escHtml(e.value.slice(0,80))}</span></div>`
+        ).join('');
+      }
+    }
+
+  } catch (e) {
+    console.warn('[hud] memory fetch error:', e);
+    memoryHtml = `<span class="na">Hata: ${escHtml(e.message)}</span>`;
+  }
+
+  return `
+    <div class="ctx-block">
+      <div class="ctx-block-hdr">
+        <div class="dot" style="background:var(--purple)"></div>
+        <span style="color:var(--purple)">Kimlik</span>
+      </div>
+      <div class="ctx-block-body">${identHtml}</div>
+    </div>
+
+    <div class="ctx-block">
+      <div class="ctx-block-hdr">
+        <div class="dot" style="background:var(--gold)"></div>
+        <span style="color:var(--gold)">Bugün</span>
+      </div>
+      <div class="ctx-block-body">${dailyHtml}</div>
+    </div>
+
+    <div class="ctx-block">
+      <div class="ctx-block-hdr">
+        <div class="dot" style="background:var(--teal)"></div>
+        <span style="color:var(--teal)">İlgili Hafıza</span>
+      </div>
+      <div class="ctx-block-body">${memoryHtml}</div>
+    </div>
+
+    <div class="ctx-block">
+      <div class="ctx-block-hdr">
+        <div class="dot" style="background:var(--muted)"></div>
+        <span style="color:var(--muted)">Metrik</span>
+      </div>
+      <div class="ctx-block-body">
+        <div class="metric-row"><span class="metric-k">Model</span><span class="metric-v">${escHtml(model)}</span></div>
+        <div class="metric-row"><span class="metric-k">Token (input)</span><span class="metric-v" style="color:var(--dim)">N/A</span></div>
+        <div class="metric-row"><span class="metric-k">Token (output)</span><span class="metric-v" style="color:var(--dim)">N/A</span></div>
+        <div class="metric-row" style="font-size:9px;color:var(--dim);margin-top:4px">
+          <span>Stream endpoint token bilgisi dönmüyor.</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function isDesktop() { return window.innerWidth >= 1024; }
+
+async function toggleSoulCtx(btn, ctxData, msgEl) {
+  if (isDesktop()) {
+    // Right panel mode
+    const isThisMsg = btn.classList.contains('active');
+    document.querySelectorAll('.info-btn.active').forEach(b => b.classList.remove('active'));
+
+    if (isThisMsg && soulPanelOpen) {
+      closeSoulPanel();
+    } else {
+      btn.classList.add('active');
+      openSoulPanel();
+      $soulBody.innerHTML = '<div class="ctx-block"><div class="ctx-block-body"><span class="na">Yükleniyor…</span></div></div>';
+      $soulBody.innerHTML = await buildCtxHtml(ctxData);
+    }
+  } else {
+    // Inline accordion mode
+    const inlineEl = msgEl.querySelector('.soul-inline');
+    if (!inlineEl) return;
+
+    const isOpen = inlineEl.classList.contains('open');
+    document.querySelectorAll('.soul-inline.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.info-btn.active').forEach(b => b.classList.remove('active'));
+
+    if (!isOpen) {
+      inlineEl.classList.add('open');
+      btn.classList.add('active');
+      if (!inlineEl._loaded) {
+        inlineEl.innerHTML = '<div style="padding:12px;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--dim)">Yükleniyor…</div>';
+        const html = await buildCtxHtml(ctxData);
+        inlineEl.innerHTML = `<div style="padding:10px;display:flex;flex-direction:column;gap:10px">${html}</div>`;
+        inlineEl._loaded = true;
+      }
+    }
+  }
+}
+
+function openSoulPanel() {
+  soulPanelOpen = true;
+  $soulPanel.classList.add('open');
+  LS.setSoulOpen(true);
+}
+
+function closeSoulPanel() {
+  soulPanelOpen = false;
+  $soulPanel.classList.remove('open');
+  document.querySelectorAll('.info-btn.active').forEach(b => b.classList.remove('active'));
+  LS.setSoulOpen(false);
+}
+
+$soulClose.addEventListener('click', closeSoulPanel);
+
+// ── INPUT LOGIC ───────────────────────────────────────────────────────────────
+function autoResize() {
+  $msgInput.style.height = 'auto';
+  $msgInput.style.height = Math.min($msgInput.scrollHeight, 160) + 'px';
+}
+
+$msgInput.addEventListener('input', autoResize);
+
+$msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+$sendBtn.addEventListener('click', sendMessage);
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    $messages.scrollTop = $messages.scrollHeight;
+  });
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+loadSessions();
+
+// Restore soul panel state
+if (LS.getSoulOpen() && isDesktop()) openSoulPanel();
+</script>
+</body>
+</html>

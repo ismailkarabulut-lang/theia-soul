@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theia — Persona Analizi</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&family=Rajdhani:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #03020a;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.07);
+  --text: rgba(255,255,255,0.85);
+  --muted: rgba(255,255,255,0.35);
+  --dim: rgba(255,255,255,0.12);
+  --purple: #7C6EF5;
+  --green: #1D9E75;
+  --orange: #EF9F27;
+  --red: #E85D24;
+  --blue: #4FA8D5;
+  --pink: #C77DFF;
+  --gold: #E8B86D;
+  --teal: #2DD4BF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse at 10% 15%, rgba(124,110,245,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(45,212,191,0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(10,6,25,1) 0%, transparent 80%);
+  pointer-events:none; z-index:0;
+}
+.container { max-width:1200px; margin:0 auto; padding:52px 28px; position:relative; z-index:1; }
+
+/* HEADER */
+.header { text-align:center; margin-bottom:48px; padding-bottom:36px; border-bottom:1px solid var(--border); position:relative; }
+.header::after { content:''; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%); width:180px; height:1px; background:linear-gradient(90deg,transparent,var(--purple),transparent); }
+.eyebrow { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.38em; color:var(--purple); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:12px; }
+.eyebrow::before,.eyebrow::after { content:''; width:36px; height:1px; background:linear-gradient(90deg,transparent,var(--purple)); }
+.eyebrow::after { transform:scaleX(-1); }
+h1 { font-family:'Orbitron',sans-serif; font-size:clamp(24px,4vw,40px); font-weight:900; letter-spacing:.1em; color:#fff; text-shadow:0 0 60px rgba(124,110,245,0.4); margin-bottom:10px; }
+h1 span { color:var(--purple); }
+.header-sub { font-size:14px; color:var(--muted); letter-spacing:.05em; margin-bottom:24px; }
+
+/* WINDOW SELECTOR */
+.window-bar { display:flex; gap:8px; justify-content:center; margin-bottom:0; }
+.win-btn {
+  font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em;
+  padding:7px 20px; border-radius:8px; cursor:pointer; text-transform:uppercase;
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+  transition:all 0.2s ease;
+}
+.win-btn:hover { border-color:rgba(124,110,245,0.4); color:var(--text); }
+.win-btn.active {
+  border-color:var(--purple); color:var(--purple);
+  background:rgba(124,110,245,0.1);
+  box-shadow:0 0 16px rgba(124,110,245,0.2);
+}
+
+/* SECTION */
+.section { margin-bottom:56px; }
+.sec-title { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:600; letter-spacing:.3em; color:var(--muted); text-transform:uppercase; margin-bottom:22px; display:flex; align-items:center; gap:13px; }
+.sec-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+.sec-num { width:22px; height:22px; border-radius:5px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:8px; color:var(--dim); }
+
+/* METRIC CARDS */
+.metric-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.metric-row.col3 { grid-template-columns:repeat(3,1fr); }
+.metric-row.col2 { grid-template-columns:repeat(2,1fr); }
+.metric-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:22px 20px; text-align:center; position:relative; overflow:hidden;
+  transition:all 0.25s ease;
+}
+.metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--mc,var(--purple)); opacity:0.7; }
+.metric-card:hover { border-color:var(--mc,rgba(124,110,245,0.4)); transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.3); }
+.metric-val { font-family:'Orbitron',sans-serif; font-size:clamp(22px,3vw,34px); font-weight:700; color:var(--mc,var(--purple)); letter-spacing:.05em; margin-bottom:6px; }
+.metric-lbl { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.metric-sub { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); margin-top:4px; }
+
+/* FREQUENCY GRID */
+.freq-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.freq-col { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; }
+.freq-col-title { font-family:'Orbitron',sans-serif; font-size:9px; letter-spacing:.22em; text-transform:uppercase; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.freq-col.purple .freq-col-title { color:var(--purple); }
+.freq-col.teal   .freq-col-title { color:var(--teal); }
+.freq-col.gold   .freq-col-title { color:var(--gold); }
+.freq-item { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.freq-term { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text); min-width:90px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.freq-bar-wrap { flex:1; height:5px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; }
+.freq-bar { height:100%; border-radius:3px; transition:width 0.8s ease; }
+.freq-col.purple .freq-bar { background:var(--purple); }
+.freq-col.teal   .freq-bar { background:var(--teal); }
+.freq-col.gold   .freq-bar { background:var(--gold); }
+.freq-count { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); min-width:26px; text-align:right; }
+
+/* HEATMAP */
+.heatmap-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; overflow-x:auto; }
+.heatmap-inner { min-width:520px; }
+.heatmap-hours { display:grid; grid-template-columns:60px repeat(24,1fr); gap:2px; margin-bottom:4px; }
+.heatmap-hour-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); text-align:center; }
+.heatmap-row { display:grid; grid-template-columns:60px repeat(24,1fr); gap:2px; margin-bottom:2px; }
+.heatmap-day-lbl { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); display:flex; align-items:center; }
+.heatmap-cell { width:100%; aspect-ratio:1; border-radius:3px; background:rgba(124,110,245,0.05); transition:all 0.3s ease; cursor:default; }
+.heatmap-cell:hover { transform:scale(1.2); z-index:10; position:relative; }
+.heatmap-peak { margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple); padding-top:12px; border-top:1px dashed var(--border); }
+
+/* LENGTH SVG */
+.svg-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; overflow:hidden; }
+.svg-legend { display:flex; gap:18px; margin-bottom:12px; }
+.svg-legend-item { display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
+.svg-legend-dot { width:20px; height:2px; border-radius:1px; }
+
+/* SESSION NOTE */
+.session-note { margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); padding:10px 14px; background:rgba(0,0,0,0.2); border:1px dashed var(--border); border-radius:8px; }
+
+/* LOADING / ERROR */
+.loading {
+  display:flex; align-items:center; justify-content:center; min-height:200px;
+  font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); letter-spacing:.1em;
+}
+@keyframes pulse { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+.loading span { animation:pulse 1.4s ease-in-out infinite; }
+.error-box {
+  background:rgba(232,93,36,0.07); border:1px solid rgba(232,93,36,0.3); border-radius:10px;
+  padding:16px 20px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--red);
+}
+
+/* FOOTER */
+.footer { text-align:center; padding:28px 0 8px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.2em; border-top:1px dashed var(--border); margin-top:60px; }
+
+@media (max-width:760px) {
+  .metric-row { grid-template-columns:repeat(2,1fr); }
+  .freq-grid { grid-template-columns:1fr; }
+  .metric-row.col3 { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="eyebrow">Persona Engine · Read-Only Analysis</div>
+    <h1>THEIA <span>·</span> Persona Analizi</h1>
+    <div class="header-sub" id="header-sub">Yükleniyor…</div>
+    <div class="window-bar">
+      <button class="win-btn active" data-w="all">Tümü</button>
+      <button class="win-btn" data-w="7d">Son 7 Gün</button>
+      <button class="win-btn" data-w="30d">Son 30 Gün</button>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="loading"><span>▸ VERİ YÜKLENİYOR…</span></div>
+  </div>
+
+  <div class="footer">THEIA · PERSONA ENGINE · READ-ONLY · v1.0</div>
+</div>
+
+<script>
+const DAYS = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+const SHORT_DAYS = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+
+let currentWindow = 'all';
+
+function fmt(n) {
+  if (n === undefined || n === null) return '—';
+  if (typeof n === 'number') return n.toLocaleString('tr-TR');
+  return String(n);
+}
+function fmtFloat(n, d=1) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toFixed(d);
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  return s.slice(0,10);
+}
+function padHour(h) { return String(h).padStart(2,'0') + ':00'; }
+
+function buildSummary(d) {
+  const dr = d.date_range || {};
+  document.getElementById('header-sub').textContent =
+    `window: ${d.window} · ${fmtDate(dr.start)} → ${fmtDate(dr.end)} · ${fmt(d.total_messages)} mesaj`;
+}
+
+function buildMetricCard(val, lbl, sub='', color='--purple') {
+  return `<div class="metric-card" style="--mc:var(${color})">
+    <div class="metric-val">${val}</div>
+    <div class="metric-lbl">${lbl}</div>
+    ${sub ? `<div class="metric-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function buildSection01(d) {
+  const tp = d.time_pattern || {};
+  const sp = d.session_pattern || {};
+  const dr = d.date_range || {};
+  const dayName = DAYS[tp.peak_weekday ?? 0] || '—';
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">01</span>Özet Metrikler</div>
+    <div class="metric-row">
+      ${buildMetricCard(fmt(d.total_messages), 'Toplam Mesaj',
+        `👤 ${fmt(d.user_messages)} kullanıcı · 🤖 ${fmt(d.assistant_messages)} asistan`, '--purple')}
+      ${buildMetricCard(fmt(sp.total_sessions), 'Oturum',
+        `ort. ${fmtFloat(sp.avg_messages_per_session)} msg/oturum`, '--teal')}
+      ${buildMetricCard(fmtDate(dr.start) + ' →', 'Tarih Aralığı',
+        fmtDate(dr.end), '--gold')}
+      ${buildMetricCard(padHour(tp.peak_hour ?? 0), 'Peak Saat',
+        dayName, '--pink')}
+    </div>
+  </div>`;
+}
+
+function buildSection02(d) {
+  const fr = d.frequency || {};
+  const uni = fr.top_unigrams || [];
+  const bi = fr.top_bigrams || [];
+  const tri = fr.top_trigrams || [];
+  const maxUni = uni[0]?.count || 1;
+  const maxBi  = bi[0]?.count || 1;
+  const maxTri = tri[0]?.count || 1;
+
+  function col(items, maxC, cls, title) {
+    const rows = items.map(x => {
+      const pct = Math.round((x.count / maxC) * 100);
+      return `<div class="freq-item">
+        <span class="freq-term" title="${x.term}">${x.term}</span>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:${pct}%"></div></div>
+        <span class="freq-count">${x.count}</span>
+      </div>`;
+    }).join('');
+    return `<div class="freq-col ${cls}">
+      <div class="freq-col-title">${title}</div>
+      ${rows || '<div style="color:var(--dim);font-family:JetBrains Mono,monospace;font-size:10px;">Veri yok</div>'}
+    </div>`;
+  }
+
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">02</span>Frekans Haritası</div>
+    <div class="freq-grid">
+      ${col(uni, maxUni, 'purple', 'Unigrams — Top 30')}
+      ${col(bi,  maxBi,  'teal',   'Bigrams — Top 20')}
+      ${col(tri, maxTri, 'gold',   'Trigrams — Top 15')}
+    </div>
+  </div>`;
+}
+
+function buildSection03(d) {
+  const tp = d.time_pattern || {};
+  const hm = tp.heatmap || [];
+  const maxVal = Math.max(...hm.flat(), 1);
+
+  let hoursRow = '<div style="width:60px"></div>';
+  for (let h = 0; h < 24; h++) {
+    hoursRow += `<div class="heatmap-hour-lbl">${h % 3 === 0 ? h : ''}</div>`;
+  }
+
+  let rows = '';
+  for (let wd = 0; wd < 7; wd++) {
+    let cells = '';
+    for (let h = 0; h < 24; h++) {
+      const v = (hm[wd] || [])[h] || 0;
+      const opacity = v === 0 ? 0.04 : 0.1 + (v / maxVal) * 0.85;
+      cells += `<div class="heatmap-cell" title="${SHORT_DAYS[wd]} ${h}:00 — ${v} mesaj"
+        style="background:rgba(124,110,245,${opacity.toFixed(2)})"></div>`;
+    }
+    rows += `<div class="heatmap-row">
+      <div class="heatmap-day-lbl">${SHORT_DAYS[wd]}</div>${cells}
+    </div>`;
+  }
+
+  const peakDay = DAYS[tp.peak_weekday ?? 0] || '—';
+  const peakH = padHour(tp.peak_hour ?? 0);
+
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">03</span>Zaman Örüntüsü</div>
+    <div class="heatmap-wrap">
+      <div class="heatmap-inner">
+        <div class="heatmap-hours">${hoursRow}</div>
+        ${rows}
+        <div class="heatmap-peak">▸ Peak: ${peakDay} ${peakH}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildSection04(d) {
+  const lp = d.length_pattern || {};
+  const bhu = lp.by_hour_user || new Array(24).fill(0);
+  const bha = lp.by_hour_assistant || new Array(24).fill(0);
+
+  const allVals = [...bhu, ...bha].filter(v => v > 0);
+  const maxV = allVals.length ? Math.max(...allVals) : 1;
+
+  const W = 720, H = 160, PAD = 32;
+  const xStep = (W - PAD) / 23;
+
+  function lineD(data, clamp) {
+    return data.map((v, i) => {
+      const x = PAD / 2 + i * xStep;
+      const y = H - PAD / 2 - ((v / clamp) * (H - PAD));
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  const dUser = lineD(bhu, maxV);
+  const dAsst = lineD(bha, maxV);
+
+  // x-axis ticks
+  let ticks = '';
+  for (let h = 0; h < 24; h += 3) {
+    const x = PAD / 2 + h * xStep;
+    ticks += `<text x="${x.toFixed(1)}" y="${H + 2}" fill="rgba(255,255,255,0.25)"
+      font-family="JetBrains Mono,monospace" font-size="8" text-anchor="middle">${h}:00</text>`;
+  }
+
+  const svg = `<svg viewBox="0 0 ${W} ${H + 14}" width="100%" style="overflow:visible">
+    <line x1="${PAD/2}" y1="0" x2="${PAD/2}" y2="${H - PAD/2}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    <line x1="${PAD/2}" y1="${H - PAD/2}" x2="${W - PAD/2}" y2="${H - PAD/2}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    <path d="${dUser}" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${dAsst}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="5,3"/>
+    ${ticks}
+  </svg>`;
+
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">04</span>Uzunluk Örüntüsü</div>
+    <div class="metric-row col3" style="margin-bottom:16px">
+      ${buildMetricCard(fmtFloat(lp.user_avg_chars,0) + ' kr', 'Kullanıcı Ort.', 'karakter/mesaj', '--purple')}
+      ${buildMetricCard(fmtFloat(lp.assistant_avg_chars,0) + ' kr', 'Asistan Ort.', 'karakter/mesaj', '--teal')}
+      ${buildMetricCard(fmtFloat(lp.user_assistant_ratio,3), 'Oran (U/A)', 'user_avg ÷ asst_avg', '--gold')}
+    </div>
+    <div class="svg-wrap">
+      <div class="svg-legend">
+        <div class="svg-legend-item"><div class="svg-legend-dot" style="background:var(--purple)"></div>Kullanıcı</div>
+        <div class="svg-legend-item"><div class="svg-legend-dot" style="background:var(--teal);opacity:0.8"></div>Asistan (kesikli)</div>
+      </div>
+      ${svg}
+    </div>
+  </div>`;
+}
+
+function buildSection05(d) {
+  const sp = d.session_pattern || {};
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">05</span>Oturum Örüntüsü</div>
+    <div class="metric-row" style="margin-bottom:14px">
+      ${buildMetricCard(fmt(sp.total_sessions), 'Toplam Oturum', '', '--purple')}
+      ${buildMetricCard(fmtFloat(sp.avg_messages_per_session), 'Ort. Msg/Oturum', '', '--teal')}
+      ${buildMetricCard(fmt(sp.longest_session), 'En Uzun Oturum', 'mesaj sayısı', '--gold')}
+      ${buildMetricCard(fmt(sp.deep_sessions), 'Derin Oturum', '>10 mesaj', '--pink')}
+    </div>
+    <div class="session-note">
+      ▸ Tek mesajlık ${fmt(sp.single_message_sessions)} oturum &nbsp;·&nbsp; Derin (>10 msg) ${fmt(sp.deep_sessions)} oturum
+    </div>
+  </div>`;
+}
+
+function buildSection06(d) {
+  const tu = d.token_usage || {};
+  const bho = tu.by_hour_output || new Array(24).fill(0);
+  const maxTok = Math.max(...bho, 1);
+
+  const W = 720, H = 130, PAD = 32;
+  const barW = (W - PAD) / 24 - 2;
+
+  let bars = '';
+  for (let h = 0; h < 24; h++) {
+    const v = bho[h] || 0;
+    const barH = (v / maxTok) * (H - PAD);
+    const x = PAD / 2 + h * ((W - PAD) / 24);
+    const y = H - PAD / 2 - barH;
+    const opacity = v === 0 ? 0.1 : 0.3 + (v / maxTok) * 0.7;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}"
+      fill="var(--gold)" opacity="${opacity.toFixed(2)}" rx="2">
+      <title>${h}:00 — ${fmt(v)} token</title></rect>`;
+  }
+
+  let ticks = '';
+  for (let h = 0; h < 24; h += 3) {
+    const x = PAD / 2 + h * ((W - PAD) / 24) + barW / 2;
+    ticks += `<text x="${x.toFixed(1)}" y="${H + 2}" fill="rgba(255,255,255,0.25)"
+      font-family="JetBrains Mono,monospace" font-size="8" text-anchor="middle">${h}:00</text>`;
+  }
+
+  const svg = `<svg viewBox="0 0 ${W} ${H + 14}" width="100%" style="overflow:visible">
+    <line x1="${PAD/2}" y1="${H - PAD/2}" x2="${W - PAD/2}" y2="${H - PAD/2}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    ${bars}${ticks}
+  </svg>`;
+
+  return `<div class="section">
+    <div class="sec-title"><span class="sec-num">06</span>Token Sarfiyatı</div>
+    <div class="metric-row col2" style="margin-bottom:16px">
+      ${buildMetricCard(fmt(tu.total_output_tokens), 'Toplam Output Token', `input: ${fmt(tu.total_input_tokens)}`, '--gold')}
+      ${buildMetricCard(fmtFloat(tu.avg_output_per_msg,1), 'Ort. Output / Msg', 'token/mesaj', '--orange')}
+    </div>
+    <div class="svg-wrap">${svg}</div>
+  </div>`;
+}
+
+function render(d) {
+  buildSummary(d);
+  const html = [
+    buildSection01(d),
+    buildSection02(d),
+    buildSection03(d),
+    buildSection04(d),
+    buildSection05(d),
+    buildSection06(d),
+  ].join('');
+  document.getElementById('main-content').innerHTML = html;
+}
+
+async function load(w) {
+  document.getElementById('main-content').innerHTML =
+    '<div class="loading"><span>▸ VERİ YÜKLENİYOR…</span></div>';
+  document.getElementById('header-sub').textContent = 'Yükleniyor…';
+  try {
+    const res = await fetch(`/api/persona/snapshot?window=${w}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    render(data);
+  } catch (err) {
+    document.getElementById('main-content').innerHTML =
+      `<div class="error-box">▸ Hata: ${err.message}</div>`;
+    document.getElementById('header-sub').textContent = 'Veri yüklenemedi';
+  }
+}
+
+// Window butonları
+document.querySelectorAll('.win-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.win-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentWindow = btn.dataset.w;
+    load(currentWindow);
+  });
+});
+
+load(currentWindow);
+</script>
+</body>
+</html>
