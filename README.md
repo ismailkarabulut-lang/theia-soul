@@ -143,14 +143,16 @@ systemctl --user enable --now theia-electron.service
 ### Android APK
 
 ```bash
-cd ~/theia-mobile
+cd ~/theia-apk
 rm -rf www/* && cp -r ~/theia-soul/static/* www/
 npx cap sync android
 cd android && ./gradlew assembleDebug --no-daemon
-# APK: android/app/build/outputs/apk/debug/app-debug.apk
+cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 ```
 
-⚠️ APK build öncesi `static/` içinde `localhost:8000` yerine `100.115.79.121:8000` olduğunu doğrula.
+- Capacitor config: `server.url = http://100.115.79.121:8000`, `androidScheme: http`
+- `network_security_config.xml` ile 100.115.79.121 için cleartext izni verilmiş
+- `~/theia-app/` ve `~/theia-mobile/` silindi (2026.05.16) — yeni dizin `~/theia-apk/`
 
 ---
 
@@ -172,7 +174,7 @@ cd android && ./gradlew assembleDebug --no-daemon
 | Görüntü Analizi | ⏳ Planlandı | Screenshot → Claude |
 | WhatsApp | ⏳ Planlandı | Sesli komutla mesaj |
 | Google Calendar | ⏳ Planlandı | |
-| Android APK | ⚠️ IP sorunu | SOUL_API sabiti güncellenmeli |
+| Android APK | ✅ Aktif | ~/theia-apk/ · Capacitor → 100.115.79.121:8000 |
 
 ---
 

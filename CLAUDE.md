@@ -97,11 +97,11 @@ Tahmin veya yorum yoktur — her satır çalışan koddan türetilmiştir.
 ├── main.js                 ← Chromium flagleri: PipeWire, no-sandbox, autoplay
 └── package.json            ← start: "electron . --no-sandbox"
 
-~/theia-mobile/             ← APK build ortamı (eski ~/theia-app/ geçersizdir)
-├── capacitor.config.json   ← server.url: http://100.115.79.121:8000
+~/theia-apk/                ← APK build ortamı (~/theia-app/ ve ~/theia-mobile/ silindi)
+├── capacitor.config.json   ← server.url: http://100.115.79.121:8000, androidScheme: http
 └── android/app/src/main/
-    ├── AndroidManifest.xml ← cleartextTraffic + networkSecurityConfig
-    └── res/xml/network_security_config.xml
+    ├── AndroidManifest.xml ← usesCleartextTraffic + networkSecurityConfig
+    └── res/xml/network_security_config.xml ← 100.115.79.121 domain izni
 
 ~/theia/                    ← Telegram botu (ayrı proje)
 ~/TheiaMemory/              ← Obsidian vault
@@ -210,17 +210,18 @@ Kritik `main.js` flagleri:
 - `no-sandbox` — GPU sandbox sorunu önleme
 - `unsafely-treat-insecure-origin-as-secure=http://localhost:8000`
 
-## APK Build (~/theia-mobile/)
+## APK Build (~/theia-apk/)
 
 ```bash
-cd ~/theia-mobile
+cd ~/theia-apk
 rm -rf www/* && cp -r ~/theia-soul/static/* www/
 npx cap sync android
 cd android && ./gradlew assembleDebug --no-daemon
 cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 ```
 
-⚠️ Build öncesi `static/` içinde `localhost:8000` var mı kontrol et — `100.115.79.121:8000` olmalı.
+⚠️ Build öncesi `www/` içinde `localhost:8000` var mı kontrol et — `100.115.79.121:8000` olmalı.
+- `~/theia-app/` ve `~/theia-mobile/` kalıcı olarak silindi (2026.05.16)
 
 ---
 
@@ -242,7 +243,7 @@ cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 | GÖRÜNTÜ | ⏳ Planlandı | Screenshot → Claude analizi |
 | WHATSAPP | ⏳ Planlandı | Sesli komutla mesaj gönderme |
 | TAKVİM | ⏳ Planlandı | Google Calendar entegrasyonu |
-| APK | ⚠️ IP sorunu | SOUL_API sabiti güncellenmeli |
+| APK | ✅ Aktif | ~/theia-apk/ · 4.2 MB debug build · server.url → 100.115.79.121:8000 |
 
 ---
 
