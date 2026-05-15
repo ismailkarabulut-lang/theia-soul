@@ -1,7 +1,7 @@
 # Theia Soul — Kişisel AI Ekosistemi
 
 Kaptan İsmail Karabulut'un kişisel sunucusunda çalışan, çoklu model destekli,
-offline ses tanıma ve Edge TTS katmanlı AI altyapısı.
+offline ses tanıma, wake word ve Edge TTS katmanlı AI altyapısı.
 
 ---
 
@@ -10,28 +10,31 @@ offline ses tanıma ve Edge TTS katmanlı AI altyapısı.
 ```
 KAPTAN
   │
-  ├── Electron Masaüstü (~/theia-electron · npm start)
-  │     └── localhost:8000 → Soul HUD (mikrofon + ses tam destek)
+  ├── Electron Masaüstü (theia-electron.service · systemd --user · otomatik)
+  │     ├── localhost:8000 → Soul HUD
+  │     └── Wake word "Hey Theia" → pasif Vosk dinleme → aktif komut modu
   │
   ├── Soul HUD (tarayıcı / APK · index.html)
-  │     ├── Chat → POST /api/chat
-  │     ├── Vault → GET /api/memory
-  │     ├── Persona → GET /api/persona/snapshot
-  │     ├── Sağlık → GET /api/health
-  │     ├── Görev → GET/POST /api/gorev
-  │     ├── TTS → POST /api/speak → MP3 → Audio.play()
-  │     └── STT → WS /api/ws/stt → Vosk offline Türkçe
+  │     ├── Chat    → POST /api/chat
+  │     ├── Vault   → GET  /api/memory
+  │     ├── Persona → GET  /api/persona/snapshot
+  │     ├── Sağlık  → GET  /api/health
+  │     ├── Görev   → GET/POST /api/gorev
+  │     ├── TTS     → POST /api/speak → MP3 → Audio.play()
+  │     ├── STT     → WS   /api/ws/stt → Vosk offline Türkçe
+  │     └── YouTube → POST /api/youtube/search → webbrowser.open()
   │
   ├── Telegram Bot (theia.service · Python · long-polling)
-  │     └── ~/theia/main.py
   │
   └── Soul API (theia-soul.service · FastAPI · :8000)
         ├── Model Fabrikası → Claude / DeepSeek / Kimi / Ollama
-        ├── Gatekeeper v2.3 (risk sınıflandırıcı)
-        ├── Scout (hafıza decay motoru · 30/90 gün)
-        ├── Persona Engine (konuşma analitik motoru)
+        ├── Gatekeeper v2.3
+        ├── Scout (hafıza decay · 30/90 gün)
+        ├── Persona Engine
         ├── Vosk STT WebSocket (/api/ws/stt · offline Türkçe)
-        └── Obsidian Bridge (cron 15dk · TheiaMemory/System/ → Soul DB)
+        ├── Edge TTS (/api/speak · tr/tr-m/en)
+        ├── YouTube Arama (/api/youtube/search)
+        └── Obsidian Bridge (cron 15dk)
 
 Erişim: Tailscale · 100.115.79.121:8000
 ```
@@ -40,10 +43,11 @@ Erişim: Tailscale · 100.115.79.121:8000
 
 ## Servisler
 
-| Servis | Komut | Açıklama |
+| Servis | Tür | Komut |
 |---|---|---|
-| `theia-soul.service` | `sudo systemctl restart theia-soul` | Soul API (FastAPI) |
-| `theia.service` | `sudo systemctl restart theia` | Telegram botu |
+| `theia-soul.service` | system | `sudo systemctl restart theia-soul` |
+| `theia.service` | system | `sudo systemctl restart theia` |
+| `theia-electron.service` | user | `systemctl --user restart theia-electron` |
 
 ---
 
@@ -56,15 +60,20 @@ Erişim: Tailscale · 100.115.79.121:8000
 | POST | `/api/chat/stream` | SSE stream chat |
 | GET | `/api/memory` | Hafıza listesi |
 | PUT | `/api/memory/{key}` | Hafıza yaz |
+| DELETE | `/api/memory/{key}` | Hafıza sil |
 | GET | `/api/scout/report` | Scout raporu |
+| GET | `/api/scout/summary` | Scout özet |
+| PATCH | `/api/scout/status/{key}` | Status güncelle |
 | POST | `/api/soul/daily` | Günlük özet yaz |
 | POST | `/api/speak` | Edge TTS → MP3 stream (tr/tr-m/en) |
-| GET | `/api/speak/voices` | Kullanılabilir TTS sesleri |
-| **WS** | `/api/ws/stt` | **Vosk offline STT** — PCM16/16kHz → JSON transcript |
+| GET | `/api/speak/voices` | Kullanılabilir sesler |
+| WS | `/api/ws/stt` | Vosk offline STT — PCM16/16kHz → JSON transcript |
 | GET | `/api/gorev` | Görev listesi |
 | POST | `/api/gorev` | Görev oluştur |
 | PATCH | `/api/gorev/{id}/done` | Görevi tamamla |
+| DELETE | `/api/gorev/{id}` | Görevi sil |
 | GET | `/api/persona/snapshot` | Persona analizi |
+| POST | `/api/youtube/search` | YouTube arama & tarayıcıda aç |
 
 ---
 
@@ -77,88 +86,71 @@ Erişim: Tailscale · 100.115.79.121:8000
 | `kimi` | moonshot-v1-8k | Moonshot API |
 | `ollama` | llama3 | Yerel Ollama |
 
-Chat isteğinde `model` alanıyla seçilir. Varsayılan `.env`'deki `DEFAULT_MODEL`.
+---
+
+## Wake Word
+
+"Hey Theia" deyince:
+1. Vosk pasif dinlemesi tetiklenir (`ws://localhost:8000/api/ws/stt`)
+2. Edge TTS ile "Kaptan Theia seni dinliyor" sesi çalar
+3. `startListening()` çağrılır — aktif komut modu başlar
+4. 30 saniye sessizlik sonrası otomatik pasife döner
+
+Sol alt köşede gösterge: **yeşil** = pasif · **sarı** = aktif
 
 ---
 
 ## Kurulum
 
 ### Gereksinimler
-- Python 3.11+
-- Node.js 18+ (Electron veya APK build için)
-- Tailscale (uzak erişim için)
+- Python 3.11+ · Node.js 18+ · Tailscale
 
 ### Soul API
 
 ```bash
 git clone https://github.com/ismailkarabulut-lang/theia-soul
 cd theia-soul
-
-python -m venv venv
-source venv/bin/activate
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-
-# .env dosyasını oluştur
-cp .env.example .env
-# .env içine ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY yaz
-
+cp .env.example .env  # API anahtarlarını doldur
 python main.py
 ```
 
 ### Offline STT (Vosk Türkçe)
 
 ```bash
-# Vosk kur
 pip install vosk
-
-# Türkçe modeli indir
 mkdir -p vosk-models && cd vosk-models
 wget https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip
 unzip vosk-model-small-tr-0.3.zip
 ```
 
-Model ilk WebSocket bağlantısında otomatik yüklenir (~1s), sonraki bağlantılarda önbellekten gelir.
+Model ilk bağlantıda yüklenir (~1s), sonraki bağlantılarda önbellekten gelir.
 
 ### Electron Masaüstü (Debian/Linux)
 
 ```bash
-cd ~/theia-electron
-npm install
-npm start
-```
+# Tek seferlik kurulum
+cd ~/theia-electron && npm install
 
-Mikrofon, TTS ve Web Speech API Electron üzerinde tam çalışır.
-PipeWire + PulseAudio gerektirir (Debian 13 varsayılan).
+# Manuel başlatma
+npm start
+
+# Systemd servisi (oturum açılışında otomatik)
+systemctl --user enable --now theia-electron.service
+```
 
 ### Android APK
 
 ```bash
-# ANA KAYNAK her zaman ~/theia-soul/static/index.html
-# Önce index.html'deki SOUL_API IP'sini güncelle
-
-cp ~/theia-soul/static/index.html ~/theia-app/www/index.html
-
-export ANDROID_HOME=~/Android/Sdk
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-export PATH=$JAVA_HOME/bin:$PATH
-
-cd ~/theia-app
+cd ~/theia-mobile
+rm -rf www/* && cp -r ~/theia-soul/static/* www/
 npx cap sync android
 cd android && ./gradlew assembleDebug --no-daemon
+# APK: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-**Not:** Debug build. Dağıtım için release build + keystore gerekir.
-
----
-
-## Obsidian Bridge
-
-`~/TheiaMemory/System/` dizinine yazılan her `.md` dosyası
-15 dakika içinde Soul DB'ye (`memory` tablosu) girer.
-
-- `core_identity.md` → `entry_type: core` (Theia kimlik tanımı)
-- Diğer `.md` dosyaları → `entry_type: memory`
-- Günlük özetler → `POST /api/soul/daily` ile yazılır
+⚠️ APK build öncesi `static/` içinde `localhost:8000` yerine `100.115.79.121:8000` olduğunu doğrula.
 
 ---
 
@@ -172,12 +164,13 @@ cd android && ./gradlew assembleDebug --no-daemon
 | Gatekeeper v2.3 | ✅ Aktif | Risk sınıflandırıcı |
 | Sağlık | ✅ Aktif | |
 | Görev | ✅ Aktif | soul.db bağlı |
-| TTS (ses çıkış) | ✅ Aktif | Edge TTS → /api/speak → MP3 |
-| STT (ses giriş) | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt |
-| Electron | ✅ Aktif | ~/theia-electron · Debian 13 |
+| TTS | ✅ Aktif | Edge TTS → /api/speak → MP3 |
+| STT | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt |
+| Wake Word | ✅ Aktif | "Hey Theia" — 30s aktif mod |
+| Electron | ✅ Aktif | systemd --user · otomatik başlatma |
+| YouTube | ✅ Aktif | /api/youtube/search |
 | Görüntü Analizi | ⏳ Planlandı | Screenshot → Claude |
-| WhatsApp Mesaj | ⏳ Planlandı | Sesli komutla mesaj |
-| YouTube | ⏳ Planlandı | Kanal istatistikleri |
+| WhatsApp | ⏳ Planlandı | Sesli komutla mesaj |
 | Google Calendar | ⏳ Planlandı | |
 | Android APK | ⚠️ IP sorunu | SOUL_API sabiti güncellenmeli |
 
@@ -186,28 +179,8 @@ cd android && ./gradlew assembleDebug --no-daemon
 ## Bağımlılıklar (Python)
 
 ```
-fastapi
-uvicorn
-anthropic
-python-dotenv
-aiosqlite
-edge-tts
-pydantic
-vosk
-```
-
-## Bağımlılıklar (APK)
-
-```json
-{
-  "@capacitor/core": "7.x",
-  "@capacitor/android": "7.x",
-  "@capacitor-community/speech-recognition": "7.0.1",
-  "@capacitor-community/text-to-speech": "latest",
-  "@capacitor/local-notifications": "8.x",
-  "@capacitor/splash-screen": "8.x",
-  "@capacitor/status-bar": "8.x"
-}
+fastapi · uvicorn · anthropic · python-dotenv
+aiosqlite · edge-tts · pydantic · vosk
 ```
 
 ---
