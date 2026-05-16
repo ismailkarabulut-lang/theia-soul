@@ -98,9 +98,9 @@ Tahmin veya yorum yoktur — her satır çalışan koddan türetilmiştir.
 └── package.json            ← start: "electron . --no-sandbox"
 
 ~/theia-apk/                ← APK build ortamı (~/theia-app/ ve ~/theia-mobile/ silindi)
-├── capacitor.config.json   ← server.url: http://100.115.79.121:8000, androidScheme: http
+├── capacitor.config.json   ← androidScheme: http, allowMixedContent (server.url YOK — yerel serve)
 └── android/app/src/main/
-    ├── AndroidManifest.xml ← usesCleartextTraffic + networkSecurityConfig
+    ├── AndroidManifest.xml ← INTERNET + RECORD_AUDIO + MODIFY_AUDIO_SETTINGS + networkSecurityConfig
     └── res/xml/network_security_config.xml ← 100.115.79.121 domain izni
 
 ~/theia/                    ← Telegram botu (ayrı proje)
@@ -220,8 +220,18 @@ cd android && ./gradlew assembleDebug --no-daemon
 cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 ```
 
-⚠️ Build öncesi `www/` içinde `localhost:8000` var mı kontrol et — `100.115.79.121:8000` olmalı.
+- `server.url` yok — APK dosyaları `www/` içinden yerel serve edilir (getUserMedia için zorunlu)
+- `SOUL_API` `window.Capacitor.isNativePlatform()` ile otomatik algılanır → `http://100.115.79.121:8000`
 - `~/theia-app/` ve `~/theia-mobile/` kalıcı olarak silindi (2026.05.16)
+- Modüller (vault/persona/saglik/gorev) index.html içinde inline · team ayrı uygulama
+
+## STT Notları
+
+- Vosk `AcceptWaveform()` artık `ThreadPoolExecutor`'da çalışıyor — event loop blokajı yok
+- STT push-to-talk: 5 saniye minimum, erken durdurmada toast bildirimi
+- Wake word timeout: 60 saniye (duraklamalar için)
+- `goToSleep()` artık `stopListening()` çağırmaz — kullanıcı kendisi durdurur
+- Pasif dinleme: aktif kayıt bitince 500ms sonra yeniden başlar
 
 ---
 
@@ -237,9 +247,11 @@ cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 | GÖREV | ✅ Aktif | soul.db bağlı |
 | TTS | ✅ Aktif | Edge TTS → /api/speak → MP3 |
 | STT | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt |
-| WAKE WORD | ✅ Aktif | "Hey Theia" — pasif dinleme → 30s aktif mod |
+| WAKE WORD | ✅ Aktif | "Hey Theia" — pasif dinleme → 60s aktif mod |
 | ELECTRON | ✅ Aktif | systemd --user · otomatik başlatma |
 | YOUTUBE | ✅ Aktif | /api/youtube/search · webbrowser.open() |
+| APK STT | ✅ Aktif | androidScheme:http + RECORD_AUDIO → getUserMedia çalışıyor |
+| APK TTS | ⚠️ Devam | Ses kesilme sorunu — incelenecek |
 | GÖRÜNTÜ | ⏳ Planlandı | Screenshot → Claude analizi |
 | WHATSAPP | ⏳ Planlandı | Sesli komutla mesaj gönderme |
 | TAKVİM | ⏳ Planlandı | Google Calendar entegrasyonu |

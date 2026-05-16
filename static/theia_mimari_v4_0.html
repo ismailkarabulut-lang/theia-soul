@@ -274,12 +274,14 @@ pre.code-block { font-family:'JetBrains Mono',monospace; font-size:12px; line-he
       <span class="badge-item on">● GÖREV MODÜLÜ · AKTİF · SOUL DB</span>
       <span class="badge-item on">● VAULT MODÜLÜ · AKTİF</span>
       <span class="badge-item on">● SAĞLIK MODÜLÜ · AKTİF</span>
-      <span class="badge-item on">● TEAM · BİLİŞSEL MERCEK · AKTİF</span>
+      <span class="badge-item concept">TEAM · AYRI UYGULAMA PLANINDA</span>
       <span class="badge-item on">● REDMI NOTE 15 PRO · TERMUX</span>
       <span class="badge-item on">● GRAPHIFY · 38.7x TOKEN REDUCTION</span>
+      <span class="badge-item on">● WAKE WORD · "HEY THEIA" · AKTİF</span>
+      <span class="badge-item on">● ELECTRON SERVİSİ · SYSTEMD USER</span>
       <span class="badge-item">TAILSCALE · 100.115.79.121</span>
       <span class="badge-item on">● 32GB RAM · BATARYA YENİLENDİ</span>
-      <span class="badge-item warn">APK · IP SORUNU · ÇÖZÜLECEK</span>
+      <span class="badge-item on">● APK · STT AKTİF · TTS DEVAM</span>
       <span class="badge-item warn">GÖRÜNTÜ MODÜLÜ · YAKINDA</span>
       <span class="badge-item warn">WHATSAPP MESAJ · YAKINDA</span>
       <span class="badge-item warn">YOUTUBE MODÜLÜ · YAKINDA</span>
@@ -575,7 +577,7 @@ pre.code-block { font-family:'JetBrains Mono',monospace; font-size:12px; line-he
       <div class="card" style="--cc:#C77DFF">
         <div class="card-head"><div class="card-title">Soul HUD · index.html</div><div class="card-tag on">UP</div></div>
         <div class="card-body">Tarayıcı tabanlı tek sayfa uygulama. Graphify analizine göre <strong>god node #3</strong> — 14 edge ile tüm overlay modüllerin host'u. <code>window.warpOpen</code> gizli paylaşımlı bağımlılık.</div>
-        <div class="card-meta">path: <code>theia-soul/static/index.html</code><br>erişim: <code>100.115.79.121:8000</code><br>modüller: chat · vault · persona · sağlık · görev · team</div>
+        <div class="card-meta">path: <code>theia-soul/static/index.html</code><br>erişim: <code>100.115.79.121:8000</code><br>modüller: chat · vault · persona · sağlık · görev (inline) · team ayrı uygulama</div>
       </div>
       <div class="card" style="--cc:#2DD4BF">
         <div class="card-head"><div class="card-title">Vault Modülü</div><div class="card-tag on">AKTİF</div></div>
@@ -633,8 +635,8 @@ pre.code-block { font-family:'JetBrains Mono',monospace; font-size:12px; line-he
         <div class="card-meta">alias: <code>~/.bashrc</code> · Redmi Note 15 Pro<br>hedef: <code>100.115.79.121:8000/api/soul/daily</code><br>bağımlılık: <code>jq</code></div>
       </div>
       <div class="card" style="--cc:#4FA8D5; opacity:0.7;">
-        <div class="card-head"><div class="card-title">Theia APK · Capacitor</div><div class="card-tag warn">IP SORUNU</div></div>
-        <div class="card-body">Android native uygulama. STT/TTS Capacitor native ile çalışıyor. Sorun: APK içindeki <code>SOUL_API</code> sabiti yanlış adres çekiyor, API'ye ulaşamıyor.</div>
+        <div class="card-head"><div class="card-title">Theia APK · Capacitor 8</div><div class="card-tag on">KISMİ</div></div>
+        <div class="card-body">Android native uygulama. <code>~/theia-apk/</code> — sıfırdan kuruldu (2026.05.16). <code>androidScheme: http</code> + yerel www/ serve → getUserMedia çalışıyor. <code>SOUL_API = http://100.115.79.121:8000</code> Capacitor native algılama ile. STT aktif, TTS devam ediyor.</div>
         <div class="card-meta">todo: <code>SOUL_API</code> sabitini güncelle<br>todo: <code>capacitor.config.ts allowNavigation</code> güncelle<br>build: <code>gradlew assembleDebug</code></div>
       </div>
       <div class="card" style="--cc:#4FA8D5; opacity:0.6;">
@@ -664,13 +666,16 @@ pre.code-block { font-family:'JetBrains Mono',monospace; font-size:12px; line-he
       <div class="tl-item done"><div class="tl-text">Graphify kuruldu ve çalıştırıldı — 267 node, 429 edge, 25 community, 38.7x token reduction</div></div>
       <div class="tl-item done"><div class="tl-text">CLAUDE.md + README.md sıfırdan yeniden yazıldı — gerçek koda dayalı, uydurma yok</div></div>
       <div class="tl-item done"><div class="tl-text">GitHub repo güncellendi — tüm modüller, mimari dosyalar push'landı</div></div>
-      <div class="tl-item partial"><div class="tl-text">Theia APK — STT/TTS çalışıyor, API bağlantısı (Failed to fetch) hâlâ çözülmedi</div></div>
+      <div class="tl-item done"><div class="tl-text">Theia APK — sıfırdan <code>~/theia-apk/</code>, androidScheme:http + getUserMedia fix, STT aktif</div></div>
       <div class="tl-item todo"><div class="tl-text"><code>POST /api/team/analyze</code> backend endpoint'i yazılacak — Team modülü tamamlanacak</div></div>
       <div class="tl-item todo"><div class="tl-text">Görüntü analizi modülü — screenshot → Claude analizi, laptop tarafında</div></div>
       <div class="tl-item todo"><div class="tl-text">WhatsApp mesaj — sesli komutla kişiye mesaj gönderme</div></div>
       <div class="tl-item todo"><div class="tl-text">YouTube modülü — kanal istatistikleri + sesli komutla şarkı açma</div></div>
       <div class="tl-item todo"><div class="tl-text">Google Calendar entegrasyonu — görev modülüyle birleşik, sesli komutla ekleme</div></div>
-      <div class="tl-item todo"><div class="tl-text">APK IP sorunu çözülecek — <code>SOUL_API</code> sabiti + <code>capacitor.config.ts</code> güncellemesi</div></div>
+      <div class="tl-item done"><div class="tl-text">Vosk ThreadPoolExecutor fix — asyncio event loop blokajı giderildi</div></div>
+      <div class="tl-item done"><div class="tl-text">Modüller index.html'e inline edildi · team ayrı uygulama olarak planlandı</div></div>
+      <div class="tl-item done"><div class="tl-text">STT push-to-talk: 5sn minimum, wake word timeout 60s, goToSleep stopListening çağırmıyor</div></div>
+      <div class="tl-item partial"><div class="tl-text">APK TTS sesi kesildi — devam ediyor</div></div>
       <div class="tl-item todo"><div class="tl-text">Backcore ESP32-S3 prototip — wake-word pipeline, BT/Wi-Fi bridge tasarımı</div></div>
     </div>
   </div>
@@ -922,7 +927,7 @@ _registry: dict[str, BaseModel] = {}  <span class="cm"># singleton cache</span>
             <span class="layer-pill">Soul HUD · :8000</span>
             <span class="layer-pill">theia-brief · Termux</span>
             <span class="layer-pill">Redmi Note 15 Pro</span>
-            <span class="layer-pill" style="border-color:rgba(239,159,39,0.4);color:var(--orange);">Theia APK · IP sorunu</span>
+            <span class="layer-pill" style="border-color:rgba(239,159,39,0.4);color:var(--orange);">Theia APK · STT aktif · TTS devam</span>
             <span class="layer-pill planned">Backcore · ESP32-S3</span>
           </div>
         </div>
@@ -998,7 +1003,7 @@ _registry: dict[str, BaseModel] = {}  <span class="cm"># singleton cache</span>
 const NODES = [
   { id:'kaptan',     label:'KAPTAN',        sub:'Kullanıcı · İsmail Karabulut',  color:'#C77DFF', x:0.50, y:0.04 },
   { id:'redmi',      label:'REDMI NOTE',    sub:'Android · Termux',              color:'#C77DFF', x:0.14, y:0.04 },
-  { id:'apk',        label:'THEIA APK',     sub:'Capacitor · IP sorunu',         color:'#E85D24', x:0.14, y:0.15 },
+  { id:'apk',        label:'THEIA APK',     sub:'Capacitor 8 · STT aktif',       color:'#EF9F27', x:0.14, y:0.15 },
   { id:'stt',        label:'STT / TTS',     sub:'Capacitor native · tr-TR',      color:'#E85D24', x:0.02, y:0.27 },
   { id:'backcore',   label:'BACKCORE',      sub:'ESP32-S3 · concept',            color:'#4FA8D5', x:0.86, y:0.04 },
   { id:'phone',      label:'TERMUX',        sub:'theia-brief · jq',              color:'#E8B86D', x:0.14, y:0.27 },

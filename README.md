@@ -94,7 +94,7 @@ Erişim: Tailscale · 100.115.79.121:8000
 1. Vosk pasif dinlemesi tetiklenir (`ws://localhost:8000/api/ws/stt`)
 2. Edge TTS ile "Kaptan Theia seni dinliyor" sesi çalar
 3. `startListening()` çağrılır — aktif komut modu başlar
-4. 30 saniye sessizlik sonrası otomatik pasife döner
+4. 60 saniye sonra otomatik pasife döner (STT kullanıcı tarafından manuel durdurulur)
 
 Sol alt köşede gösterge: **yeşil** = pasif · **sarı** = aktif
 
@@ -150,8 +150,10 @@ cd android && ./gradlew assembleDebug --no-daemon
 cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 ```
 
-- Capacitor config: `server.url = http://100.115.79.121:8000`, `androidScheme: http`
-- `network_security_config.xml` ile 100.115.79.121 için cleartext izni verilmiş
+- `server.url` YOK — `www/` yerel serve edilir → `getUserMedia` için zorunlu (http://localhost origin)
+- `androidScheme: http` + `allowMixedContent: true`
+- `RECORD_AUDIO` + `MODIFY_AUDIO_SETTINGS` manifest'te
+- `SOUL_API`: `window.Capacitor.isNativePlatform()` ile otomatik → `http://100.115.79.121:8000`
 - `~/theia-app/` ve `~/theia-mobile/` silindi (2026.05.16) — yeni dizin `~/theia-apk/`
 
 ---
@@ -168,13 +170,14 @@ cp app/build/outputs/apk/debug/app-debug.apk ~/Masaüstü/theia-soul.apk
 | Görev | ✅ Aktif | soul.db bağlı |
 | TTS | ✅ Aktif | Edge TTS → /api/speak → MP3 |
 | STT | ✅ Aktif | Vosk offline Türkçe → /api/ws/stt |
-| Wake Word | ✅ Aktif | "Hey Theia" — 30s aktif mod |
+| Wake Word | ✅ Aktif | "Hey Theia" — 60s aktif mod, goToSleep STT kesmez |
 | Electron | ✅ Aktif | systemd --user · otomatik başlatma |
 | YouTube | ✅ Aktif | /api/youtube/search |
 | Görüntü Analizi | ⏳ Planlandı | Screenshot → Claude |
 | WhatsApp | ⏳ Planlandı | Sesli komutla mesaj |
 | Google Calendar | ⏳ Planlandı | |
-| Android APK | ✅ Aktif | ~/theia-apk/ · Capacitor → 100.115.79.121:8000 |
+| Android APK STT | ✅ Aktif | getUserMedia çalışıyor · androidScheme:http |
+| Android APK TTS | ⚠️ Devam | Ses kesilme sorunu — incelenecek |
 
 ---
 
